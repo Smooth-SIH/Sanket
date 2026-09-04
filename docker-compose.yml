@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  sanket-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: sanket_fastapi_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    restart: always
+
+  sanket-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sanket_streamlit_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - SANKET_API_URL=http://sanket-backend:8000
+    depends_on:
+      - sanket-backend
+    restart: always
