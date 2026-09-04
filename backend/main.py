@@ -11,6 +11,7 @@ import requests
 import pandas as pd
 import uvicorn
 
+import config
 from ml.predictor import predictor
 from backend.mock_data import (
     get_current_risk_zones,
@@ -97,7 +98,11 @@ def live_predict(
     Thunderstorm, Cloudburst, Flash Flood probabilities & Terrain risk
     matching api.py.
     """
-    url = "https://api.open-meteo.com/v1/forecast"
+    url = (
+        "https://customer-api.open-meteo.com/v1/forecast"
+        if config.WEATHER_API_KEY
+        else "https://api.open-meteo.com/v1/forecast"
+    )
     curr_vars = (
         "temperature_2m,relative_humidity_2m,wind_speed_10m,"
         "precipitation,cape,convective_inhibition"
@@ -108,6 +113,8 @@ def live_predict(
         "current": curr_vars,
         "timezone": timezone
     }
+    if config.WEATHER_API_KEY:
+        params["apikey"] = config.WEATHER_API_KEY
 
     try:
         response = requests.get(url, params=params, timeout=5)

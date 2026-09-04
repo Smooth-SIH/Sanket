@@ -2,6 +2,11 @@
 SANKET - Severe Weather Early Warning System Configuration
 """
 import os
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Application Settings
 APP_NAME = "SANKET"
@@ -9,6 +14,7 @@ APP_TAGLINE = "AI-Driven Hyper-Local Severe Weather Nowcasting System"
 VERSION = "1.0.0"
 
 # API Settings
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "")
 FASTAPI_DEFAULT_URL = "http://localhost:8000"
 API_BASE_URL = os.getenv("SANKET_API_URL", FASTAPI_DEFAULT_URL)
 API_TIMEOUT = 5  # seconds
