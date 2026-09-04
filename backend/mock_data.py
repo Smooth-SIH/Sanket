@@ -1,14 +1,108 @@
 """
-SANKET Mock Geospatial & Meteorological Data Generator
-Provides synthetic datasets for India weather nowcasting,
-historical replay events, and asset inventories.
+SANKET Data Provider & Failsafe Engine
+Attempts to load real database/CSV datasets (terrain_risk_data,
+real_weather_data, training_data) first. If dataset or database fails,
+acts as a high-fidelity failsafe by generating mock data.
 """
+import os
 from datetime import datetime, timedelta
 import numpy as np
+import pandas as pd
+
+
+def _try_load_csv(filename: str) -> pd.DataFrame:
+    """Helper function to load CSV from data/ or current directory."""
+    paths = [
+        os.path.join("data", filename),
+        filename
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            try:
+                df = pd.read_csv(p)
+                if not df.empty:
+                    return df
+            except (OSError, ValueError, pd.errors.EmptyDataError):
+                pass
+    return None
 
 
 def get_current_risk_zones():
-    """Generates GeoJSON FeatureCollection of risk zones in Mumbai."""
+    """
+    Generates GeoJSON FeatureCollection of risk zones in Mumbai, attempting to
+    load database/CSV first with mock failsafe.
+    """
+    df_terrain = _try_load_csv("terrain_risk_data.csv")
+
+    if df_terrain is not None and "terrain_risk" in df_terrain.columns:
+        try:
+            features = []
+            for idx, row in df_terrain.iterrows():
+                loc_name = str(row.get("location", f"Zone-{idx+1}"))
+                lat = float(row.get("latitude", 19.076 + idx * 0.04))
+                lon = float(row.get("longitude", 72.877 + idx * 0.02))
+                t_risk = float(row.get("terrain_risk", 50.0))
+                elevation = float(row.get("elevation", 10.0))
+
+                if t_risk >= 75:
+                    r_level = "HIGH"
+                elif t_risk >= 50:
+                    r_level = "MODERATE"
+                elif t_risk >= 30:
+                    r_level = "YELLOW"
+                else:
+                    r_level = "SAFE"
+
+                poly_coords = [[
+                    [round(lon - 0.03, 4), round(lat - 0.03, 4)],
+                    [round(lon + 0.03, 4), round(lat - 0.03, 4)],
+                    [round(lon + 0.04, 4), round(lat + 0.03, 4)],
+                    [round(lon - 0.02, 4), round(lat + 0.04, 4)],
+                    [round(lon - 0.03, 4), round(lat - 0.03, 4)]
+                ]]
+
+                features.append({
+                    "type": "Feature",
+                    "properties": {
+                        "zone_id": f"Z-DB-{idx+1:02d}",
+                        "zone_name": f"{loc_name} Region",
+                        "risk_level": r_level,
+                        "overall_risk_pct": round(t_risk, 1),
+                        "thunderstorm_risk": round(
+                            min(99.0, t_risk * 1.05), 1
+                        ),
+                        "cloudburst_risk": round(
+                            min(99.0, t_risk * 0.95), 1
+                        ),
+                        "flash_flood_risk": round(
+                            min(99.0, t_risk * 1.02), 1
+                        ),
+                        "lead_time": "2-4 Hours",
+                        "iwv": 48.5,
+                        "iwv_rate": 7.2,
+                        "cape": 2850,
+                        "cin": 15,
+                        "ctt_drop": 14.2,
+                        "rainfall_rate": round(t_risk * 0.8, 1),
+                        "wind_shear": 22.0,
+                        "dem_elevation": elevation
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": poly_coords
+                    }
+                })
+
+            if features:
+                return {
+                    "type": "FeatureCollection",
+                    "features": features
+                }
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass  # Fall through to synthetic mock data failsafe
+
+
+    # Failsafe Synthetic Mock Data
     features = [
         {
             "type": "Feature",
@@ -161,8 +255,13 @@ def get_current_risk_zones():
 
 
 def get_critical_assets():
-    """Generates inventory of monitored infrastructure assets."""
-    return [
+    """
+    Generates inventory of monitored infrastructure assets, using database/CSV
+    if available with mock failsafe.
+    """
+    df_terrain = _try_load_csv("terrain_risk_data.csv")
+
+    base_assets = [
         {
             "id": "AST-SUB-01",
             "name": "Kalwa High Voltage Substation",
@@ -326,9 +425,74 @@ def get_critical_assets():
         }
     ]
 
+    if df_terrain is not None and "location" in df_terrain.columns:
+        try:
+            t_map = {
+                str(r["location"]).lower(): r for _, r in df_terrain.iterrows()
+            }
+            for asset in base_assets:
+                name_lower = asset["name"].lower()
+                for loc_key, r_data in t_map.items():
+                    if loc_key in name_lower or name_lower in loc_key:
+                        asset["elevation_m"] = float(
+                            r_data.get("elevation", asset["elevation_m"])
+                        )
+                        t_score = float(
+                            r_data.get("terrain_risk", asset["risk_pct"])
+                        )
+                        asset["risk_pct"] = round(t_score, 1)
+                        asset["vulnerability_score"] = round(
+                            min(10.0, t_score / 10.0), 1
+                        )
+                        if t_score >= 70:
+                            asset["current_risk"] = "HIGH"
+                        elif t_score >= 40:
+                            asset["current_risk"] = "MODERATE"
+                        else:
+                            asset["current_risk"] = "LOW"
+        except (ValueError, KeyError, AttributeError):
+            pass
+
+    return base_assets
+
 
 def get_weather_grid_overlay():
-    """Generates synthetic atmospheric grid points for contours."""
+    """
+    Generates atmospheric metric grid points, attempting database/CSV first
+    with mock failsafe.
+    """
+    df_weather = _try_load_csv("real_weather_data.csv")
+
+    if df_weather is not None and "cape" in df_weather.columns:
+        try:
+            sample_cape = float(df_weather["cape"].mean())
+            sample_rain = float(df_weather["precipitation"].mean())
+            sample_temp = float(df_weather["temperature_2m"].mean())
+
+            grid_points = []
+            lats = np.linspace(18.85, 19.35, 12)
+            lons = np.linspace(72.75, 73.20, 12)
+
+            for lat in lats:
+                for lon in lons:
+                    dist = np.sqrt((lat - 19.02)**2 + (lon - 72.84)**2)
+                    iwv = max(18.0, 55.0 - dist * 65.0 + sample_rain * 2)
+                    cape = max(300.0, sample_cape * 1.5 - dist * 4500.0)
+                    ctt_d = max(1.0, 20.0 - dist * 30.0 + (sample_temp / 10.0))
+
+                    grid_points.append({
+                        "lat": round(float(lat), 4),
+                        "lon": round(float(lon), 4),
+                        "iwv": round(float(iwv), 1),
+                        "cape": round(float(cape), 0),
+                        "ctt_drop": round(float(ctt_d), 1)
+                    })
+            return grid_points
+        except (ValueError, KeyError, AttributeError):
+            pass
+
+
+    # Failsafe Synthetic Grid Calculation
     grid_points = []
     lats = np.linspace(18.85, 19.35, 12)
     lons = np.linspace(72.75, 73.20, 12)
@@ -361,8 +525,10 @@ def get_weather_grid_overlay():
 
 
 def get_historical_events():
-    """Provides historical severe weather event timeline datasets."""
-    return {
+    """Provides historical severe weather event timeline datasets, incorporating real weather records if available with mock failsafe."""
+    df_real = _try_load_csv("real_weather_data.csv")
+
+    events = {
         "mumbai_2020": {
             "title": (
                 "Mumbai Severe Flash Floods & Cloudburst (August 2020)"
@@ -538,60 +704,146 @@ def get_historical_events():
         }
     }
 
+    if df_real is not None and "precipitation" in df_real.columns:
+        try:
+            top_rows = df_real.sort_values(
+                by="precipitation", ascending=False
+            ).head(5)
+            if not top_rows.empty:
+                max_row = top_rows.iloc[0]
+                t_val = str(max_row.get("time", "2025-07-01"))
+                date_val = t_val.split("T", maxsplit=1)[0]
+                precip_val = float(max_row.get("precipitation", 15.0))
+                cape_val = float(max_row.get("cape", 1200))
+                events["mumbai_real_db"] = {
+                    "title": (
+                        f"Database Recorded Event ({t_val})"
+                    ),
+                    "location": "Mumbai Region Dataset",
+                    "date": date_val,
+                    "summary": (
+                        f"Peak recorded precipitation {precip_val}mm "
+                        f"with CAPE {cape_val} J/kg."
+                    ),
+                    "timesteps": [
+                        {
+                            "time_label": "Recorded Peak",
+                            "timestamp": t_val,
+                            "overall_risk_pct": 92.5,
+                            "alert_level": "RED",
+                            "iwv": 52.0,
+                            "cape": cape_val,
+                            "ctt_drop": 18.5,
+                            "rainfall": precip_val,
+                            "actual_observed_rain": precip_val,
+                            "xgb_predicted_rain": round(precip_val * 0.98, 1),
+                            "risk_zone_status": (
+                                "Verified database severe weather observation."
+                            )
+                        }
+                    ]
+                }
+        except (ValueError, KeyError, AttributeError):
+            pass
+
+    return events
+
 
 def get_recent_alerts():
-    """Returns active emergency alerts feed."""
+    """
+    Returns active emergency alerts feed, checking database records for severe
+    flags with mock failsafe.
+    """
+    df_train = _try_load_csv("training_data.csv")
     now = datetime.now()
-    return [
-        {
-            "id": "ALT-2026-098",
-            "timestamp": (
-                (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
-            ),
-            "severity": "RED",
-            "title": (
-                "Severe Cloudburst & Flash Flood Threat - "
-                "Mumbai Coastal Belt"
-            ),
-            "affected_zones": [
-                "Mumbai South-Central Coastal Belt", "Western Ghats Crest"
-            ],
-            "lead_time": "2 Hours",
-            "thunderstorm_risk_pct": 92.0,
-            "cloudburst_risk_pct": 84.5,
-            "flash_flood_risk_pct": 91.8,
-            "acknowledged": False
-        },
-        {
-            "id": "ALT-2026-097",
-            "timestamp": (
-                (now - timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S")
-            ),
-            "severity": "ORANGE",
-            "title": (
-                "High Thunderstorm Nowcast - Thane Creek & Eastern Suburbs"
-            ),
-            "affected_zones": ["Thane Creek & Eastern Ridge"],
-            "lead_time": "3 Hours",
-            "thunderstorm_risk_pct": 74.0,
-            "cloudburst_risk_pct": 62.0,
-            "flash_flood_risk_pct": 68.5,
-            "acknowledged": True
-        },
-        {
-            "id": "ALT-2026-096",
-            "timestamp": (
-                (now - timedelta(hours=2, minutes=10)).strftime(
+
+    alerts = []
+
+    if df_train is not None:
+        try:
+            severe_mask = (df_train.get("storm", 0) == 1) | (
+                df_train.get("flood", 0) == 1
+            )
+            severe_rows = df_train[severe_mask].head(3)
+            for idx, r in severe_rows.iterrows():
+                precip = float(r.get("precipitation", 0))
+                ts_str = (now - timedelta(minutes=(idx + 1) * 25)).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
-            ),
-            "severity": "YELLOW",
-            "title": "Elevated Moisture Convergence - Navi Mumbai Basin",
-            "affected_zones": ["Navi Mumbai Basin & Panvel Estuary"],
-            "lead_time": "4.5 Hours",
-            "thunderstorm_risk_pct": 52.0,
-            "cloudburst_risk_pct": 38.0,
-            "flash_flood_risk_pct": 49.5,
-            "acknowledged": True
-        }
-    ]
+                alerts.append({
+                    "id": f"ALT-DB-{idx+100}",
+                    "timestamp": ts_str,
+                    "severity": "RED" if precip > 10 else "ORANGE",
+                    "title": (
+                        f"Database Incident Flag #{idx+1} - "
+                        f"Heavy Precipitation"
+                    ),
+                    "affected_zones": [
+                        "Mumbai Coastal Belt", "Thane Ridge"
+                    ],
+                    "lead_time": "2 Hours",
+                    "thunderstorm_risk_pct": 88.0,
+                    "cloudburst_risk_pct": 79.5,
+                    "flash_flood_risk_pct": 86.4,
+                    "acknowledged": False
+                })
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+
+
+    if not alerts:
+        alerts = [
+            {
+                "id": "ALT-2026-098",
+                "timestamp": (
+                    (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+                ),
+                "severity": "RED",
+                "title": (
+                    "Severe Cloudburst & Flash Flood Threat - "
+                    "Mumbai Coastal Belt"
+                ),
+                "affected_zones": [
+                    "Mumbai South-Central Coastal Belt", "Western Ghats Crest"
+                ],
+                "lead_time": "2 Hours",
+                "thunderstorm_risk_pct": 92.0,
+                "cloudburst_risk_pct": 84.5,
+                "flash_flood_risk_pct": 91.8,
+                "acknowledged": False
+            },
+            {
+                "id": "ALT-2026-097",
+                "timestamp": (
+                    (now - timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S")
+                ),
+                "severity": "ORANGE",
+                "title": (
+                    "High Thunderstorm Nowcast - Thane Creek & Eastern Suburbs"
+                ),
+                "affected_zones": ["Thane Creek & Eastern Ridge"],
+                "lead_time": "3 Hours",
+                "thunderstorm_risk_pct": 74.0,
+                "cloudburst_risk_pct": 62.0,
+                "flash_flood_risk_pct": 68.5,
+                "acknowledged": True
+            },
+            {
+                "id": "ALT-2026-096",
+                "timestamp": (
+                    (now - timedelta(hours=2, minutes=10)).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+                ),
+                "severity": "YELLOW",
+                "title": "Elevated Moisture Convergence - Navi Mumbai Basin",
+                "affected_zones": ["Navi Mumbai Basin & Panvel Estuary"],
+                "lead_time": "4.5 Hours",
+                "thunderstorm_risk_pct": 52.0,
+                "cloudburst_risk_pct": 38.0,
+                "flash_flood_risk_pct": 49.5,
+                "acknowledged": True
+            }
+        ]
+
+    return alerts

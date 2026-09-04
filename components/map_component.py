@@ -21,7 +21,9 @@ def render_interactive_map(
     show_ctt_overlay: bool = True,
     show_dem_hillshade: bool = True,
     map_center: list = None,
-    zoom_level: int = None
+    zoom_level: int = None,
+    live_predictions: dict = None,
+    **kwargs
 ):
     """Constructs and renders the primary Folium geospatial map."""
     if map_center is None:
@@ -162,7 +164,99 @@ def render_interactive_map(
             ).add_to(ctt_group)
             ctt_group.add_to(m)
 
-    # 4. Critical Infrastructure Asset Markers Layer
+    # 4. Reference Hotspot Risk Circles Layer (MausamRakshak Map.tsx)
+    live_preds = live_predictions or {}
+    storm_prob = live_preds.get("thunderstorm_probability", 45.0)
+    cloudburst_prob = live_preds.get("cloudburst_probability", 25.0)
+    flood_prob = live_preds.get("final_flood_risk", 35.0)
+    overall_risk = max(
+        storm_prob or 0, cloudburst_prob or 0, flood_prob or 0
+    )
+
+    hotspot_locations = [
+        {
+            "name": "Mumbai Central",
+            "lat": 18.9719,
+            "lon": 72.8190,
+            "terrainRisk": 85,
+            "radius": 2500
+        },
+        {
+            "name": "Andheri",
+            "lat": 19.1197,
+            "lon": 72.8468,
+            "terrainRisk": 70,
+            "radius": 2500
+        },
+        {
+            "name": "Bandra",
+            "lat": 19.0596,
+            "lon": 72.8295,
+            "terrainRisk": 55,
+            "radius": 2200
+        },
+        {
+            "name": "Borivali",
+            "lat": 19.2307,
+            "lon": 72.8567,
+            "terrainRisk": 30,
+            "radius": 3000
+        },
+        {
+            "name": "Thane",
+            "lat": 19.2183,
+            "lon": 72.9781,
+            "terrainRisk": 65,
+            "radius": 2800
+        }
+    ]
+
+    hotspot_group = folium.FeatureGroup(
+        name="📍 Regional Risk Circles (Map.tsx)",
+        show=True
+    )
+
+    for loc in hotspot_locations:
+        base_t_risk = loc["terrainRisk"]
+        loc_risk = max(0, min(100, overall_risk * 0.7 + base_t_risk * 0.3))
+        if loc_risk >= 70:
+            c_color = "#EF4444"
+            r_name = "HIGH RISK"
+        elif loc_risk >= 40:
+            c_color = "#F97316"
+            r_name = "MODERATE RISK"
+        else:
+            c_color = "#10B981"
+            r_name = "LOW RISK"
+
+        h_popup = (
+            f'<div style="font-family: monospace; font-size: 12px; '
+            f'color: #0F172A; width: 200px;">'
+            f'<strong style="font-size: 14px;">{loc["name"]}</strong><br/>'
+            f'<b>Risk Level:</b> <span style="color: {c_color}; '
+            f'font-weight: bold;">{r_name} ({loc_risk:.1f}%)</span><br/>'
+            f'<b>Terrain Risk:</b> {base_t_risk}%<br/>'
+            f'<b>Thunderstorm:</b> {storm_prob}%<br/>'
+            f'<b>Cloudburst:</b> {cloudburst_prob}%<br/>'
+            f'<b>Flash Flood:</b> {flood_prob}%'
+            f'</div>'
+        )
+
+        folium.Circle(
+            location=[loc["lat"], loc["lon"]],
+            radius=loc["radius"],
+            color=c_color,
+            fill=True,
+            fill_color=c_color,
+            fill_opacity=0.35,
+            popup=folium.Popup(h_popup, max_width=220),
+            tooltip=f"{loc['name']}: {r_name}"
+        ).add_to(hotspot_group)
+
+    hotspot_group.add_to(m)
+
+
+    # 5. Critical Infrastructure Asset Markers Layer
     if assets_list:
         asset_group = folium.FeatureGroup(
             name="🏢 Monitored Critical Assets", show=True
@@ -236,7 +330,7 @@ def render_interactive_map(
 
         asset_group.add_to(m)
 
-    # 5. Add Layer Control & Render
+    # 6. Add Layer Control & Render
     folium.LayerControl(position="topright", collapsed=False).add_to(m)
 
     st_data = st_folium(

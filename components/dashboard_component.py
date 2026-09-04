@@ -9,6 +9,66 @@ import pandas as pd
 import config
 
 
+def render_mausamrakshak_hazard_cards(live_data: dict):
+    """Renders the 3 Reference Hazard Cards (Thunderstorm, Cloudburst, Flash Flood) matching App.tsx."""
+    st.markdown("### 🌩️ MausamRakshak AI Live Hazard Risk Assessment")
+
+    storm_prob = live_data.get("thunderstorm_probability")
+    cb_prob = live_data.get("cloudburst_probability")
+    flood_prob = live_data.get("flash_flood_probability")
+    final_flood = live_data.get("final_flood_risk")
+
+    def get_badge_html(prob):
+        if prob is None:
+            return '<div style="background-color: #334155; color: #94A3B8; padding: 4px 10px; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 12px;">LOADING</div>'
+        if prob >= 70:
+            return '<div style="background-color: #7F1D1D; color: #FCA5A5; border: 1px solid #EF4444; padding: 4px 10px; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 12px;">HIGH RISK</div>'
+        if prob >= 40:
+            return '<div style="background-color: #7C2D12; color: #FDBA74; border: 1px solid #F97316; padding: 4px 10px; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 12px;">MODERATE RISK</div>'
+        return '<div style="background-color: #064E3B; color: #6EE7B7; border: 1px solid #10B981; padding: 4px 10px; border-radius: 4px; display: inline-block; font-weight: bold; font-size: 12px;">LOW RISK</div>'
+
+    h1, h2, h3 = st.columns(3)
+
+    with h1:
+        st.markdown(f"""
+        <div style="background-color: #1E293B; border: 1px solid #334155; border-top: 4px solid #F59E0B; padding: 18px; border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0; color: #F8FAFC;">Thunderstorm</h4>
+            <div style="font-size: 34px; font-weight: 900; color: #F59E0B; margin: 10px 0;">
+                {f"{storm_prob}%" if storm_prob is not None else "Loading..."}
+            </div>
+            <p style="color: #94A3B8; font-size: 13px; margin-bottom: 12px;">AI Storm Probability</p>
+            {get_badge_html(storm_prob)}
+        </div>
+        """, unsafe_allow_html=True)
+
+    with h2:
+        st.markdown(f"""
+        <div style="background-color: #1E293B; border: 1px solid #334155; border-top: 4px solid #EF4444; padding: 18px; border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0; color: #F8FAFC;">Cloudburst</h4>
+            <div style="font-size: 34px; font-weight: 900; color: #EF4444; margin: 10px 0;">
+                {f"{cb_prob}%" if cb_prob is not None else "Loading..."}
+            </div>
+            <p style="color: #94A3B8; font-size: 13px; margin-bottom: 12px;">AI Cloudburst Probability</p>
+            {get_badge_html(cb_prob)}
+        </div>
+        """, unsafe_allow_html=True)
+
+    with h3:
+        st.markdown(f"""
+        <div style="background-color: #1E293B; border: 1px solid #334155; border-top: 4px solid #3B82F6; padding: 18px; border-radius: 8px; text-align: center;">
+            <h4 style="margin: 0; color: #F8FAFC;">Flash Flood</h4>
+            <div style="font-size: 34px; font-weight: 900; color: #60A5FA; margin: 10px 0;">
+                {f"{final_flood}%" if final_flood is not None else "Loading..."}
+            </div>
+            <p style="color: #94A3B8; font-size: 13px; margin-bottom: 8px;">Terrain-Adjusted Flood Risk</p>
+            {get_badge_html(final_flood)}
+            <div style="color: #64748B; font-size: 11px; margin-top: 8px;">
+                AI Probability: {f"{flood_prob}%" if flood_prob is not None else "Loading..."}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 def render_risk_kpi_cards(prediction_data: dict):
     """Renders top Risk Summary Cards with color-coded badges."""
     alert_level = prediction_data.get("alert_level", "GREEN")
@@ -38,6 +98,7 @@ def render_risk_kpi_cards(prediction_data: dict):
             </div>
         </div>
         """, unsafe_allow_html=True)
+
 
     with col2:
         ts_risk = prediction_data.get("thunderstorm_risk", 0.0)

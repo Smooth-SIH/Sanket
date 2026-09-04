@@ -7,6 +7,7 @@ import config
 
 from components.data_layer import (
     data_manager,
+    cached_fetch_live_prediction,
     cached_fetch_risk_zones,
     cached_fetch_assets,
     cached_fetch_weather_grid,
@@ -14,6 +15,7 @@ from components.data_layer import (
 )
 from components.map_component import render_interactive_map
 from components.dashboard_component import (
+    render_mausamrakshak_hazard_cards,
     render_risk_kpi_cards,
     render_realtime_metrics_grid,
     render_trend_charts,
@@ -26,7 +28,7 @@ from components.asset_monitor import render_asset_monitoring
 
 # Set Page Config (Must be first Streamlit call)
 st.set_page_config(
-    page_title="SANKET - AI Severe Weather Nowcasting",
+    page_title="SANKET / MausamRakshak AI - Severe Weather Early Warning",
     page_icon="⛈️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -68,18 +70,42 @@ st.markdown("""
     header[data-testid="stHeader"] {
         background-color: #0F172A;
     }
+    .live-badge-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #EF4444;
+        border: 1px solid #EF4444;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    .live-dot {
+        width: 10px;
+        height: 10px;
+        background-color: #EF4444;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #EF4444;
+        animation: blink 1.2s infinite ease-in-out;
+    }
+    @keyframes blink {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.3; transform: scale(0.85); }
+    }
 </style>
 """, unsafe_allow_html=True)
 
 
 def main():
-    """Main execution workflow for SANKET Streamlit Application."""
+    """Main execution workflow for SANKET / MausamRakshak AI Streamlit Application."""
     # ---------------------------------------------------------
     # SIDEBAR CONTROLS & METEOROLOGICAL PARAMETER SIMULATOR
     # ---------------------------------------------------------
     st.sidebar.image("https://img.icons8.com/color/96/storm--v1.png", width=64)
-    st.sidebar.title("⚡ SANKET NOWCAST")
-    st.sidebar.caption("AI-Driven Hyper-Local Weather Early Warning")
+    st.sidebar.title("⚡ MausamRakshak AI")
+    st.sidebar.caption("AI-Driven Hyper-Local Severe Weather Early Warning")
 
     st.sidebar.markdown("---")
 
@@ -142,11 +168,12 @@ def main():
         "pressure_drop_3h": sim_press
     }
 
-    # Fetch Prediction Result
+    # Fetch XGBoost Prediction Result & Open-Meteo Live Prediction
     prediction_data = data_manager.get_prediction(
         input_features,
         force_offline=force_offline
     )
+    live_prediction = cached_fetch_live_prediction(force_offline=force_offline)
 
     st.sidebar.markdown("---")
 
@@ -159,29 +186,33 @@ def main():
     layer_dem = st.sidebar.checkbox("DEM Elevation Hillshade", value=True)
 
     # ---------------------------------------------------------
-    # MAIN APPLICATION HEADER
+    # MAIN APPLICATION HEADER MATCHING APP.TSX
     # ---------------------------------------------------------
     col_hdr1, col_hdr2 = st.columns([3, 1])
     with col_hdr1:
-        st.title("⚡ SANKET : Severe Weather Early Warning System")
+        st.title("⚡ SANKET : MausamRakshak AI Early Warning System")
         st.markdown(
-            "**AI Nowcasting Engine** | Predicting Thunderstorms, Cloudbursts "
-            "& Flash Floods **2 to 6 Hours** in advance using XGBoost"
+            "**MausamRakshak AI Engine** | AI-Driven Hyper-Local Severe Weather Early Warning System "
+            "Predicting Thunderstorms, Cloudbursts & Flash Floods **2 to 6 Hours** in advance."
         )
 
     with col_hdr2:
         alert_lvl = prediction_data.get("alert_level", "GREEN")
         badge_color = config.RISK_COLORS.get(alert_lvl, "#10B981")
         st.markdown(f"""
-        <div style="background-color: #1E293B; border: 2px solid {badge_color};
-                    border-radius: 8px; padding: 10px; text-align: center;">
-            <div style="font-size: 11px; color: #94A3B8;
-                        text-transform: uppercase; font-weight: bold;">
-                SYSTEM ALERT LEVEL
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+            <div class="live-badge-box">
+                <div class="live-dot"></div>
+                LIVE WEATHER MONITORING
             </div>
-            <div style="font-size: 22px; font-weight: 900;
-                        color: {badge_color}; margin-top: 2px;">
-                {alert_lvl}
+            <div style="background-color: #1E293B; border: 2px solid {badge_color};
+                        border-radius: 8px; padding: 8px 16px; text-align: center; min-width: 180px;">
+                <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase; font-weight: bold;">
+                    SYSTEM ALERT LEVEL
+                </div>
+                <div style="font-size: 20px; font-weight: 900; color: {badge_color}; margin-top: 2px;">
+                    {alert_lvl} ALERT
+                </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -204,19 +235,19 @@ def main():
     # TAB 1: INTERACTIVE GEOSPATIAL MAP (PRIMARY VIEW)
     # ---------------------------------------------------------
     with tab_map:
+        # MausamRakshak Live Hazard Cards
+        render_mausamrakshak_hazard_cards(live_prediction)
+        st.markdown("<br>", unsafe_allow_html=True)
+
         st.markdown("### 🗺️ Live Regional Weather Risk Map & Overlays")
         st.caption(
-            "Hover over risk zones or click critical asset pins for real-time hazard intelligence."
+            "Hover over risk zones, regional risk circles, or click critical asset pins for real-time hazard intelligence."
         )
 
         # Load Datasets
         risk_zones_data = cached_fetch_risk_zones(force_offline=force_offline)
         assets_data = cached_fetch_assets(force_offline=force_offline)
         weather_grid_data = cached_fetch_weather_grid(force_offline=force_offline)
-
-        # Top KPI Quick Banner
-        render_risk_kpi_cards(prediction_data)
-        st.markdown("<br>", unsafe_allow_html=True)
 
         # Render Interactive Folium Map
         render_interactive_map(
@@ -227,13 +258,16 @@ def main():
             show_iwv_overlay=layer_iwv,
             show_cape_overlay=layer_cape,
             show_ctt_overlay=layer_ctt,
-            show_dem_hillshade=layer_dem
+            show_dem_hillshade=layer_dem,
+            live_predictions=live_prediction
         )
 
     # ---------------------------------------------------------
     # TAB 2: RISK DASHBOARD & ANALYTICS
     # ---------------------------------------------------------
     with tab_dash:
+        render_mausamrakshak_hazard_cards(live_prediction)
+        st.markdown("---")
         render_risk_kpi_cards(prediction_data)
         st.markdown("---")
         render_realtime_metrics_grid(input_features, prediction_data)
@@ -272,3 +306,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

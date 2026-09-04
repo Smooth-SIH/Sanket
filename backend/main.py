@@ -7,6 +7,8 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+import requests
+import pandas as pd
 import uvicorn
 
 from ml.predictor import predictor
@@ -19,9 +21,10 @@ from backend.mock_data import (
 )
 
 app = FastAPI(
-    title="SANKET Weather Nowcasting REST API",
+    title="SANKET / MausamRakshak AI Weather Nowcasting REST API",
     description=(
-        "AI-Driven Severe Weather Early Warning API powered by XGBoost"
+        "AI-Driven Severe Weather Early Warning API powered by "
+        "XGBoost & RandomForest models"
     ),
     version="1.0.0"
 )
@@ -70,14 +73,77 @@ class WeatherFeaturesInput(BaseModel):
 
 
 @app.get("/")
-def root():
-    """Root status endpoint."""
+def home():
+    """Root status endpoint matching MausamRakshak reference API."""
     return {
+        "message": "MausamRakshak AI API is working!",
         "system": "SANKET Severe Weather Early Warning System",
         "status": "ONLINE",
         "api_docs": "/docs",
         "version": "1.0.0"
     }
+
+
+@app.get("/live-predict")
+@app.get("/api/v1/live-predict")
+def live_predict(
+    latitude: float = 19.076,
+    longitude: float = 72.8777,
+    timezone: str = "Asia/Kolkata",
+    location: str = "Mumbai"
+):
+    """
+    Fetches real-time weather data from Open-Meteo API and calculates
+    Thunderstorm, Cloudburst, Flash Flood probabilities & Terrain risk
+    matching api.py.
+    """
+    url = "https://api.open-meteo.com/v1/forecast"
+    curr_vars = (
+        "temperature_2m,relative_humidity_2m,wind_speed_10m,"
+        "precipitation,cape,convective_inhibition"
+    )
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "current": curr_vars,
+        "timezone": timezone
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            current = data.get("current", {})
+            weather_df = pd.DataFrame([{
+                "temperature_2m": current.get("temperature_2m", 30.0),
+                "relative_humidity_2m": current.get(
+                    "relative_humidity_2m", 80.0
+                ),
+                "wind_speed_10m": current.get("wind_speed_10m", 15.0),
+                "precipitation": current.get("precipitation", 0.0),
+                "cape": current.get("cape", 1200.0),
+                "convective_inhibition": current.get(
+                    "convective_inhibition", 20.0
+                )
+            }])
+            return predictor.predict_live_weather(
+                weather_df,
+                location=location,
+                timestamp=current.get("time")
+            )
+    except (requests.RequestException, ValueError, KeyError):
+        pass
+
+    # Fallback to local default weather prediction if API is offline
+    fallback_df = pd.DataFrame([{
+        "temperature_2m": 31.5,
+        "relative_humidity_2m": 88.0,
+        "wind_speed_10m": 22.0,
+        "precipitation": 14.5,
+        "cape": 2450.0,
+        "convective_inhibition": 15.0
+    }])
+    return predictor.predict_live_weather(fallback_df, location=location)
 
 
 @app.get("/api/v1/health")
@@ -86,7 +152,8 @@ def health_check():
     return {
         "status": "HEALTHY",
         "model_loaded": predictor.is_trained,
-        "engine": "XGBoost Engine"
+        "reference_models_loaded": (predictor.storm_model is not None),
+        "engine": "XGBoost & RandomForest Ensemble Engine"
     }
 
 

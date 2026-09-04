@@ -1,0 +1,6 @@
+location,latitude,longitude,elevation,slope,drainage_risk,terrain_risk
+Mumbai Central,18.9719,72.819,8,2,0.85,85.7
+Andheri,19.1197,72.8468,12,3,0.7,74.8
+Bandra,19.0596,72.8295,15,4,0.55,64.5
+Borivali,19.2307,72.8567,25,8,0.3,42.0
+Thane,19.2183,72.9781,18,5,0.65,66.7
