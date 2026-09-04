@@ -1,12 +1,14 @@
 """
 SANKET Mock Geospatial & Meteorological Data Generator
-Provides rich synthetic datasets for India weather nowcasting, historical replay events, and asset inventories.
+Provides synthetic datasets for India weather nowcasting,
+historical replay events, and asset inventories.
 """
 from datetime import datetime, timedelta
 import numpy as np
 
+
 def get_current_risk_zones():
-    """Generates GeoJSON FeatureCollection of risk zones in Western India / Mumbai region."""
+    """Generates GeoJSON FeatureCollection of risk zones in Mumbai."""
     features = [
         {
             "type": "Feature",
@@ -19,14 +21,14 @@ def get_current_risk_zones():
                 "cloudburst_risk": 84.5,
                 "flash_flood_risk": 91.8,
                 "lead_time": "2-3 Hours",
-                "iwv": 52.4,          # kg/m²
-                "iwv_rate": 8.2,     # kg/m²/hr
-                "cape": 3150,        # J/kg
-                "cin": 12,           # J/kg
-                "ctt_drop": 16.5,    # °C/hr
-                "rainfall_rate": 68.5,# mm/hr
-                "wind_shear": 24.2,  # m/s
-                "dem_elevation": 4.5 # meters
+                "iwv": 52.4,           # kg/m²
+                "iwv_rate": 8.2,       # kg/m²/hr
+                "cape": 3150,          # J/kg
+                "cin": 12,             # J/kg
+                "ctt_drop": 16.5,      # °C/hr
+                "rainfall_rate": 68.5,  # mm/hr
+                "wind_shear": 24.2,    # m/s
+                "dem_elevation": 4.5   # meters
             },
             "geometry": {
                 "type": "Polygon",
@@ -124,7 +126,9 @@ def get_current_risk_zones():
             "type": "Feature",
             "properties": {
                 "zone_id": "Z-NORTH-SUBURBS",
-                "zone_name": "North Borivali & Sanjay Gandhi Park Foothills",
+                "zone_name": (
+                    "North Borivali & Sanjay Gandhi Park Foothills"
+                ),
                 "risk_level": "SAFE",
                 "overall_risk_pct": 22.0,
                 "thunderstorm_risk": 25.0,
@@ -149,14 +153,15 @@ def get_current_risk_zones():
             }
         }
     ]
-    
+
     return {
         "type": "FeatureCollection",
         "features": features
     }
 
+
 def get_critical_assets():
-    """Generates inventory of monitored infrastructure assets in nowcasting region."""
+    """Generates inventory of monitored infrastructure assets."""
     return [
         {
             "id": "AST-SUB-01",
@@ -171,7 +176,10 @@ def get_critical_assets():
             "vulnerability_score": 8.8,
             "submerge_depth_est_m": 0.65,
             "elevation_m": 14.0,
-            "action": "Deploy high-capacity flood pumps; activate transformer lightning divertors."
+            "action": (
+                "Deploy high-capacity flood pumps; activate transformer "
+                "lightning divertors."
+            )
         },
         {
             "id": "AST-SUB-02",
@@ -186,7 +194,10 @@ def get_critical_assets():
             "vulnerability_score": 9.4,
             "submerge_depth_est_m": 0.85,
             "elevation_m": 5.0,
-            "action": "Isolate feeder lines in low-elevation basements; prepare mobile generator trucks."
+            "action": (
+                "Isolate feeder lines in low-elevation basements; prepare "
+                "mobile generator trucks."
+            )
         },
         {
             "id": "AST-CST-01",
@@ -201,7 +212,10 @@ def get_critical_assets():
             "vulnerability_score": 9.1,
             "submerge_depth_est_m": 0.70,
             "elevation_m": 3.2,
-            "action": "Secure high-rise tower cranes against >25m/s wind shear; evacuate caisson workers."
+            "action": (
+                "Secure high-rise tower cranes against >25m/s wind shear; "
+                "evacuate caisson workers."
+            )
         },
         {
             "id": "AST-CST-02",
@@ -216,7 +230,10 @@ def get_critical_assets():
             "vulnerability_score": 6.5,
             "submerge_depth_est_m": 0.30,
             "elevation_m": 38.0,
-            "action": "Clear temporary runoff channels; anchor heavy machinery on elevated ramps."
+            "action": (
+                "Clear temporary runoff channels; anchor heavy "
+                "machinery on elevated ramps."
+            )
         },
         {
             "id": "AST-TEL-01",
@@ -231,7 +248,10 @@ def get_critical_assets():
             "vulnerability_score": 7.8,
             "submerge_depth_est_m": 0.10,
             "elevation_m": 42.0,
-            "action": "Switch backup batteries to trickle charging; alert radio engineers for lightning surges."
+            "action": (
+                "Switch backup batteries to trickle charging; alert radio "
+                "engineers for lightning surges."
+            )
         },
         {
             "id": "AST-TEL-02",
@@ -246,7 +266,9 @@ def get_critical_assets():
             "vulnerability_score": 5.2,
             "submerge_depth_est_m": 0.15,
             "elevation_m": 18.0,
-            "action": "Routine status check; verify remote telemetry links."
+            "action": (
+                "Routine status check; verify remote telemetry links."
+            )
         },
         {
             "id": "AST-FLD-01",
@@ -261,7 +283,10 @@ def get_critical_assets():
             "vulnerability_score": 9.9,
             "submerge_depth_est_m": 1.20,
             "elevation_m": 2.1,
-            "action": "Close underpass to vehicular traffic immediately; turn on underground holding tank pumps."
+            "action": (
+                "Close underpass to vehicular traffic immediately; turn "
+                "on underground holding tank pumps."
+            )
         },
         {
             "id": "AST-FLD-02",
@@ -276,7 +301,10 @@ def get_critical_assets():
             "vulnerability_score": 9.2,
             "submerge_depth_est_m": 0.90,
             "elevation_m": 3.0,
-            "action": "Activate automatic barrier gates; divert traffic to Gokhale Bridge."
+            "action": (
+                "Activate automatic barrier gates; divert traffic to "
+                "Gokhale Bridge."
+            )
         },
         {
             "id": "AST-FLD-03",
@@ -291,26 +319,36 @@ def get_critical_assets():
             "vulnerability_score": 9.7,
             "submerge_depth_est_m": 1.10,
             "elevation_m": 3.5,
-            "action": "Issue loudspeakers evacuation warnings to riverside informal settlements."
+            "action": (
+                "Issue loudspeakers evacuation warnings to riverside "
+                "informal settlements."
+            )
         }
     ]
 
+
 def get_weather_grid_overlay():
-    """Generates synthetic atmospheric grid points for contours (IWV, CAPE, CTT drop)."""
+    """Generates synthetic atmospheric grid points for contours."""
     grid_points = []
     lats = np.linspace(18.85, 19.35, 12)
     lons = np.linspace(72.75, 73.20, 12)
-    
+
     np.random.seed(101)
     for lat in lats:
         for lon in lons:
-            # Distance from storm core center (around lat 19.02, lon 72.84)
             dist = np.sqrt((lat - 19.02)**2 + (lon - 72.84)**2)
-            
-            iwv = max(18.0, 58.0 - dist * 70.0 + np.random.uniform(-2, 2))
-            cape = max(300.0, 3900.0 - dist * 5000.0 + np.random.uniform(-150, 150))
-            ctt_drop = max(1.0, 22.0 - dist * 32.0 + np.random.uniform(-1, 1))
-            
+
+            iwv = max(
+                18.0, 58.0 - dist * 70.0 + np.random.uniform(-2, 2)
+            )
+            cape = max(
+                300.0,
+                3900.0 - dist * 5000.0 + np.random.uniform(-150, 150)
+            )
+            ctt_drop = max(
+                1.0, 22.0 - dist * 32.0 + np.random.uniform(-1, 1)
+            )
+
             grid_points.append({
                 "lat": round(float(lat), 4),
                 "lon": round(float(lon), 4),
@@ -318,17 +356,23 @@ def get_weather_grid_overlay():
                 "cape": round(float(cape), 0),
                 "ctt_drop": round(float(ctt_drop), 1)
             })
-            
+
     return grid_points
 
+
 def get_historical_events():
-    """Provides historical severe weather event timeline datasets for replay module."""
+    """Provides historical severe weather event timeline datasets."""
     return {
         "mumbai_2020": {
-            "title": "Mumbai Severe Flash Floods & Cloudburst (August 2020)",
+            "title": (
+                "Mumbai Severe Flash Floods & Cloudburst (August 2020)"
+            ),
             "location": "Mumbai Metropolitan Region",
             "date": "2020-08-05",
-            "summary": "Explosive convective cloudburst delivering over 300mm rainfall in 6 hours with peak wind shear exceeding 30m/s.",
+            "summary": (
+                "Explosive convective cloudburst delivering >300mm "
+                "rainfall in 6 hours with peak wind shear > 30m/s."
+            ),
             "timesteps": [
                 {
                     "time_label": "T - 6 Hours",
@@ -341,7 +385,9 @@ def get_historical_events():
                     "rainfall": 4.5,
                     "actual_observed_rain": 2.0,
                     "xgb_predicted_rain": 3.5,
-                    "risk_zone_status": "Low convective activity detected over Arabian Sea."
+                    "risk_zone_status": (
+                        "Low convective activity over Arabian Sea."
+                    )
                 },
                 {
                     "time_label": "T - 5 Hours",
@@ -354,7 +400,9 @@ def get_historical_events():
                     "rainfall": 12.0,
                     "actual_observed_rain": 8.0,
                     "xgb_predicted_rain": 11.2,
-                    "risk_zone_status": "Rapid moisture surge inward; CAPE rising sharply."
+                    "risk_zone_status": (
+                        "Rapid moisture surge inward; CAPE rising sharply."
+                    )
                 },
                 {
                     "time_label": "T - 4 Hours",
@@ -367,7 +415,9 @@ def get_historical_events():
                     "rainfall": 28.5,
                     "actual_observed_rain": 22.0,
                     "xgb_predicted_rain": 26.8,
-                    "risk_zone_status": "SANKET issues Early Orange Warning. Updraft acceleration confirmed."
+                    "risk_zone_status": (
+                        "Early Orange Warning issued. Updrafts."
+                    )
                 },
                 {
                     "time_label": "T - 3 Hours",
@@ -380,7 +430,9 @@ def get_historical_events():
                     "rainfall": 48.0,
                     "actual_observed_rain": 41.0,
                     "xgb_predicted_rain": 46.5,
-                    "risk_zone_status": "Cloud Top Temp drop exceeds 15°C/hr. Cloudburst signature forming."
+                    "risk_zone_status": (
+                        "CTT drop > 15°C/hr. Cloudburst signature forming."
+                    )
                 },
                 {
                     "time_label": "T - 2 Hours",
@@ -393,7 +445,10 @@ def get_historical_events():
                     "rainfall": 78.0,
                     "actual_observed_rain": 72.0,
                     "xgb_predicted_rain": 76.0,
-                    "risk_zone_status": "RED ALERT: SANKET predicted flash flood peak 110 minutes in advance."
+                    "risk_zone_status": (
+                        "RED ALERT: SANKET predicted flash flood peak "
+                        "110 mins in advance."
+                    )
                 },
                 {
                     "time_label": "T - 1 Hour",
@@ -406,7 +461,9 @@ def get_historical_events():
                     "rainfall": 115.0,
                     "actual_observed_rain": 110.0,
                     "xgb_predicted_rain": 112.5,
-                    "risk_zone_status": "Extreme Downpour Event in progress across South & Central Mumbai."
+                    "risk_zone_status": (
+                        "Extreme Downpour Event in progress across Mumbai."
+                    )
                 },
                 {
                     "time_label": "T = Event Peak",
@@ -419,15 +476,22 @@ def get_historical_events():
                     "rainfall": 142.0,
                     "actual_observed_rain": 138.0,
                     "xgb_predicted_rain": 140.0,
-                    "risk_zone_status": "Peak deluge inundation reached. Model accuracy: 96.4%."
+                    "risk_zone_status": (
+                        "Peak deluge inundation reached. Accuracy: 96.4%."
+                    )
                 }
             ]
         },
         "uttarakhand_2021": {
-            "title": "Uttarakhand Himalayan Cloudburst Event (August 2021)",
+            "title": (
+                "Uttarakhand Himalayan Cloudburst Event (August 2021)"
+            ),
             "location": "Chamoli-Rudraprayag Valley",
             "date": "2021-08-29",
-            "summary": "Orographic forced cloudburst along steep Himalayan slopes triggering devastating flash floods and landslides.",
+            "summary": (
+                "Orographic forced cloudburst along steep Himalayan "
+                "slopes triggering flash floods."
+            ),
             "timesteps": [
                 {
                     "time_label": "T - 4 Hours",
@@ -440,7 +504,7 @@ def get_historical_events():
                     "rainfall": 10.0,
                     "actual_observed_rain": 8.0,
                     "xgb_predicted_rain": 9.5,
-                    "risk_zone_status": "Valley moisture pooling under weak southerly winds."
+                    "risk_zone_status": "Valley moisture pooling."
                 },
                 {
                     "time_label": "T - 2 Hours",
@@ -453,7 +517,9 @@ def get_historical_events():
                     "rainfall": 45.0,
                     "actual_observed_rain": 40.0,
                     "xgb_predicted_rain": 43.8,
-                    "risk_zone_status": "Severe Orographic updrafts triggering explosive convective cell."
+                    "risk_zone_status": (
+                        "Severe Orographic updrafts triggering cloud cell."
+                    )
                 },
                 {
                     "time_label": "T = Event Peak",
@@ -466,11 +532,12 @@ def get_historical_events():
                     "rainfall": 125.0,
                     "actual_observed_rain": 120.0,
                     "xgb_predicted_rain": 123.0,
-                    "risk_zone_status": "Cloudburst peak over valley headwaters."
+                    "risk_zone_status": "Cloudburst peak over valley."
                 }
             ]
         }
     }
+
 
 def get_recent_alerts():
     """Returns active emergency alerts feed."""
@@ -478,10 +545,17 @@ def get_recent_alerts():
     return [
         {
             "id": "ALT-2026-098",
-            "timestamp": (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S"),
+            "timestamp": (
+                (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+            ),
             "severity": "RED",
-            "title": "Severe Cloudburst & Flash Flood Threat - Mumbai Coastal Belt",
-            "affected_zones": ["Mumbai South-Central Coastal Belt", "Western Ghats Crest"],
+            "title": (
+                "Severe Cloudburst & Flash Flood Threat - "
+                "Mumbai Coastal Belt"
+            ),
+            "affected_zones": [
+                "Mumbai South-Central Coastal Belt", "Western Ghats Crest"
+            ],
             "lead_time": "2 Hours",
             "thunderstorm_risk_pct": 92.0,
             "cloudburst_risk_pct": 84.5,
@@ -490,9 +564,13 @@ def get_recent_alerts():
         },
         {
             "id": "ALT-2026-097",
-            "timestamp": (now - timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S"),
+            "timestamp": (
+                (now - timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S")
+            ),
             "severity": "ORANGE",
-            "title": "High Thunderstorm Nowcast - Thane Creek & Eastern Suburbs",
+            "title": (
+                "High Thunderstorm Nowcast - Thane Creek & Eastern Suburbs"
+            ),
             "affected_zones": ["Thane Creek & Eastern Ridge"],
             "lead_time": "3 Hours",
             "thunderstorm_risk_pct": 74.0,
@@ -502,7 +580,11 @@ def get_recent_alerts():
         },
         {
             "id": "ALT-2026-096",
-            "timestamp": (now - timedelta(hours=2, minutes=10)).strftime("%Y-%m-%d %H:%M:%S"),
+            "timestamp": (
+                (now - timedelta(hours=2, minutes=10)).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            ),
             "severity": "YELLOW",
             "title": "Elevated Moisture Convergence - Navi Mumbai Basin",
             "affected_zones": ["Navi Mumbai Basin & Panvel Estuary"],

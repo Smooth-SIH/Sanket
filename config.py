@@ -38,40 +38,60 @@ ALERT_PLAYBOOKS = {
     "RED": {
         "title": "CRITICAL EMERGENCY - RED ALERT",
         "badge_color": "#EF4444",
-        "description": "Explosive storm cloud growth and extreme rainfall rate detected. Severe risk of cloudburst & flash flooding within 2-4 hours.",
+        "description": (
+            "Explosive storm cloud growth and extreme rainfall rate "
+            "detected. Severe risk of cloudburst & flash flooding within "
+            "2-4 hours."
+        ),
         "actions": [
-            "Issue immediate public evacuation warning for low-lying coastal & riverbank areas.",
-            "Halt all construction site crane & high-elevation operations.",
-            "Deploy emergency high-capacity dewatering pumps at critical substations.",
-            "Reroute road traffic away from known underpass flood hotspots.",
-            "Notify emergency response teams (NDRF / Disaster Management Units)."
+            "Issue immediate evacuation warning for low-lying coastal "
+            "areas.",
+            "Halt all construction site crane & high-elevation "
+            "operations.",
+            "Deploy high-capacity dewatering pumps at critical "
+            "substations.",
+            "Reroute road traffic away from known underpass flood "
+            "hotspots.",
+            "Notify disaster management response teams (NDRF)."
         ]
     },
     "ORANGE": {
         "title": "HIGH VIGILANCE - ORANGE ALERT",
         "badge_color": "#F97316",
-        "description": "Rapid CTT drop and high moisture convergence observed. Moderate to high risk of thunderstorm & localized flooding in 3-6 hours.",
+        "description": (
+            "Rapid CTT drop and high moisture convergence observed. "
+            "Moderate to high risk of thunderstorm & localized flooding."
+        ),
         "actions": [
             "Place municipal response crews on 15-minute standby.",
-            "Inspect and clear storm-water drain grates at major junctions.",
-            "Alert power distribution utilities to monitor transformer load & lightning arresters.",
-            "Advise outdoor workers to seek shelter upon thunder auditory signals."
+            "Inspect and clear storm-water drain grates at major "
+            "junctions.",
+            "Alert power utilities to monitor transformer load & "
+            "arresters.",
+            "Advise outdoor workers to seek shelter upon auditory thunder."
         ]
     },
     "YELLOW": {
         "title": "ADVISORY - YELLOW ALERT",
         "badge_color": "#F59E0B",
-        "description": "Atmospheric instability rising with elevated CAPE. Low to moderate nowcast threat level.",
+        "description": (
+            "Atmospheric instability rising with elevated CAPE. "
+            "Low to moderate nowcast threat level."
+        ),
         "actions": [
             "Monitor satellite IWV and local radar feeds continuously.",
-            "Verify backup generator readiness at telecom towers & hospitals.",
+            "Verify backup generator readiness at telecom towers & "
+            "hospitals.",
             "Issue routine weather advisory updates to civic agencies."
         ]
     },
     "GREEN": {
         "title": "NORMAL CONDITIONS - GREEN ALERT",
         "badge_color": "#10B981",
-        "description": "Atmosphere stable. Moisture loading and cloud top temp drop within seasonal baseline parameters.",
+        "description": (
+            "Atmosphere stable. Moisture loading and cloud top temp drop "
+            "within seasonal baseline parameters."
+        ),
         "actions": [
             "Standard monitoring in progress.",
             "No special emergency protocols required."
@@ -95,43 +115,46 @@ METRIC_UNITS = {
 FEATURE_TRANSLATIONS = {
     "iwv_accumulation_rate": {
         "name": "IWV Accumulation Rate",
-        "high": "Abundant moisture loading rapidly converging in the lower atmosphere",
+        "high": "Abundant lower-tropospheric moisture rapid convergence",
         "low": "Low moisture convergence rate present",
         "unit": "kg/m²/hr"
     },
     "ctt_drop_rate": {
         "name": "Cloud Top Temp Drop Rate",
-        "high": "Explosive convective storm cloud vertical growth and deep updrafts",
+        "high": "Explosive convective cloud vertical growth and "
+                "updrafts",
         "low": "Gradual or stable cloud top cooling rate",
         "unit": "°C/hr"
     },
     "cape": {
         "name": "Convective Available Potential Energy (CAPE)",
-        "high": "Extreme atmospheric instability providing strong thermodynamic energy",
+        "high": "Extreme atmospheric instability and buoyant energy",
         "low": "Weak buoyancy energy available for updrafts",
         "unit": "J/kg"
     },
     "cin": {
         "name": "Convective Inhibition (CIN)",
-        "high": "Strong convective capping layer preventing early energy release",
-        "low": "Weak capping barrier allowing immediate explosive convection",
+        "high": "Strong convective capping layer preventing convection",
+        "low": "Weak capping barrier allowing immediate explosive "
+               "convection",
         "unit": "J/kg"
     },
     "wind_shear_0_6km": {
         "name": "0-6km Vertical Wind Shear",
-        "high": "Strong shear supporting storm organization and long-lived supercell formation",
+        "high": "Strong shear supporting storm organization and "
+                "supercells",
         "low": "Weak shear favoring brief single-cell pulse storms",
         "unit": "m/s"
     },
     "relative_humidity_850": {
         "name": "850hPa Relative Humidity",
-        "high": "Nearly saturated lower atmosphere sustaining precipitation efficiency",
+        "high": "Saturated lower atmosphere sustaining rain efficiency",
         "low": "Drier lower levels causing virga or evaporative cooling",
         "unit": "%"
     },
     "pressure_drop_3h": {
         "name": "3-Hour Surface Pressure Drop",
-        "high": "Sharp mesoscale barometric pressure drop signaling storm approach",
+        "high": "Sharp mesoscale pressure drop signaling storm approach",
         "low": "Stable atmospheric pressure gradient",
         "unit": "hPa"
     }

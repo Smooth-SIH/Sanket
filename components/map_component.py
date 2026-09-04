@@ -1,13 +1,14 @@
 """
 SANKET Interactive Geospatial Map Component
 Powered by Folium + streamlit-folium
-Renders multi-layered severe weather risk zones, atmospheric contours, elevation hillshades, and critical asset markers.
+Renders multi-layered severe weather risk zones, atmospheric contours,
+elevation hillshades, and critical asset markers.
 """
 import folium
-from folium.plugins import HeatMap, FeatureGroupSubGroup
-import streamlit as st
+from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import config
+
 
 def render_interactive_map(
     risk_zones_geojson: dict,
@@ -19,21 +20,23 @@ def render_interactive_map(
     show_cape_overlay: bool = True,
     show_ctt_overlay: bool = True,
     show_dem_hillshade: bool = True,
-    map_center: list = config.MAP_DEFAULT_CENTER,
-    zoom_level: int = config.MAP_DEFAULT_ZOOM
+    map_center: list = None,
+    zoom_level: int = None
 ):
-    """
-    Constructs and renders the primary Folium geospatial map with interactive controls and layer overlays.
-    """
-    # 1. Base Map Initialization with Dark / Terrain Tile Options
+    """Constructs and renders the primary Folium geospatial map."""
+    if map_center is None:
+        map_center = config.MAP_DEFAULT_CENTER
+    if zoom_level is None:
+        zoom_level = config.MAP_DEFAULT_ZOOM
+
+    # 1. Base Map Initialization
     m = folium.Map(
         location=map_center,
         zoom_start=zoom_level,
-        tiles=None,  # We add custom tiles below
+        tiles=None,
         control_scale=True
     )
 
-    # Add Base Tile Layers
     folium.TileLayer(
         tiles="CartoDB dark_matter",
         name="Dark Mode Canvas (Default)",
@@ -41,7 +44,7 @@ def render_interactive_map(
         overlay=False,
         control=True
     ).add_to(m)
-    
+
     folium.TileLayer(
         tiles="OpenStreetMap",
         name="OpenStreetMap Standard",
@@ -51,8 +54,12 @@ def render_interactive_map(
     ).add_to(m)
 
     if show_dem_hillshade:
+        hillshade_url = (
+            "https://server.arcgisonline.com/ArcGIS/rest/services/"
+            "World_Hillshade/MapServer/tile/{z}/{y}/{x}"
+        )
         folium.TileLayer(
-            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+            tiles=hillshade_url,
             name="DEM Elevation Hillshade",
             attr="Esri World Hillshade",
             overlay=True,
@@ -62,8 +69,10 @@ def render_interactive_map(
 
     # 2. Risk Zone Polygons Layer
     if show_risk_zones and risk_zones_geojson:
-        risk_group = folium.FeatureGroup(name="⚠️ Weather Risk Zones", show=True)
-        
+        risk_group = folium.FeatureGroup(
+            name="⚠️ Weather Risk Zones", show=True
+        )
+
         def style_function(feature):
             risk_level = feature["properties"].get("risk_level", "SAFE")
             color = config.RISK_COLORS.get(risk_level, "#10B981")
@@ -75,7 +84,7 @@ def render_interactive_map(
                 "dashArray": "4, 4" if risk_level == "MODERATE" else None
             }
 
-        def highlight_function(feature):
+        def highlight_function(_):
             return {
                 "weight": 4,
                 "fillOpacity": 0.65,
@@ -87,52 +96,45 @@ def render_interactive_map(
             style_function=style_function,
             highlight_function=highlight_function,
             tooltip=folium.GeoJsonTooltip(
-                fields=["zone_name", "risk_level", "overall_risk_pct", "lead_time", "rainfall_rate"],
-                aliases=["Zone:", "Risk Level:", "Risk Score (%):", "Nowcast Lead Time:", "Rainfall Rate (mm/h):"],
-                style="background-color: #1E293B; color: #F8FAFC; font-family: monospace; font-size: 12px; padding: 8px; border-radius: 4px;"
+                fields=[
+                    "zone_name", "risk_level", "overall_risk_pct",
+                    "lead_time", "rainfall_rate"
+                ],
+                aliases=[
+                    "Zone:", "Risk Level:", "Risk Score (%):",
+                    "Nowcast Lead Time:", "Rainfall Rate (mm/h):"
+                ],
+                style=(
+                    "background-color: #1E293B; color: #F8FAFC; "
+                    "font-family: monospace; font-size: 12px; "
+                    "padding: 8px; border-radius: 4px;"
+                )
             )
         )
-        
-        # Add Detailed Popup Content for Risk Polygons
-        for feature in risk_zones_geojson.get("features", []):
-            props = feature["properties"]
-            risk_color = config.RISK_COLORS.get(props["risk_level"], "#10B981")
-            
-            popup_html = f"""
-            <div style="font-family: Arial, sans-serif; width: 260px; color: #1E293B;">
-                <div style="background-color: {risk_color}; color: white; padding: 6px 10px; font-weight: bold; border-radius: 4px 4px 0 0; text-align: center;">
-                    {props['zone_name'].upper()}
-                </div>
-                <div style="padding: 10px; background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 0 0 4px 4px;">
-                    <p style="margin: 2px 0;"><b>Alert Level:</b> <span style="color: {risk_color}; font-weight: bold;">{props['risk_level']} ({props['overall_risk_pct']}%)</span></p>
-                    <p style="margin: 2px 0;"><b>Nowcast Window:</b> {props['lead_time']}</p>
-                    <hr style="margin: 6px 0; border: 0; border-top: 1px solid #E2E8F0;">
-                    <p style="margin: 2px 0;">🌊 <b>Flash Flood Risk:</b> {props['flash_flood_risk']}%</p>
-                    <p style="margin: 2px 0;">⚡ <b>Thunderstorm Risk:</b> {props['thunderstorm_risk']}%</p>
-                    <p style="margin: 2px 0;">🌧️ <b>Cloudburst Risk:</b> {props['cloudburst_risk']}%</p>
-                    <hr style="margin: 6px 0; border: 0; border-top: 1px solid #E2E8F0;">
-                    <p style="margin: 2px 0;"><b>IWV Rate:</b> {props['iwv_rate']} kg/m²/hr</p>
-                    <p style="margin: 2px 0;"><b>CAPE Instability:</b> {props['cape']} J/kg</p>
-                    <p style="margin: 2px 0;"><b>CTT Cooling Rate:</b> -{props['ctt_drop']} °C/hr</p>
-                    <p style="margin: 2px 0;"><b>DEM Elevation:</b> {props['dem_elevation']}m ASL</p>
-                </div>
-            </div>
-            """
-            # Add popup to centroid if needed
-        
+
         geojson_layer.add_to(risk_group)
         risk_group.add_to(m)
 
-    # 3. Weather Atmospheric Overlays (IWV, CAPE, CTT drop)
+    # 3. Weather Overlays
     if weather_grid:
         if show_iwv_overlay:
-            iwv_group = folium.FeatureGroup(name="💧 IWV Vapor Heatmap (kg/m²)", show=False)
-            iwv_data = [[p["lat"], p["lon"], p["iwv"]] for p in weather_grid]
-            HeatMap(iwv_data, name="IWV Heatmap", min_opacity=0.3, max_zoom=10, radius=22, blur=18, gradient={0.3: 'blue', 0.6: 'lime', 1.0: 'magenta'}).add_to(iwv_group)
+            iwv_group = folium.FeatureGroup(
+                name="💧 IWV Vapor Heatmap (kg/m²)", show=False
+            )
+            iwv_data = [
+                [p["lat"], p["lon"], p["iwv"]] for p in weather_grid
+            ]
+            HeatMap(
+                iwv_data, name="IWV Heatmap", min_opacity=0.3,
+                max_zoom=10, radius=22, blur=18,
+                gradient={0.3: 'blue', 0.6: 'lime', 1.0: 'magenta'}
+            ).add_to(iwv_group)
             iwv_group.add_to(m)
 
         if show_cape_overlay:
-            cape_group = folium.FeatureGroup(name="⚡ CAPE Instability (J/kg)", show=False)
+            cape_group = folium.FeatureGroup(
+                name="⚡ CAPE Instability (J/kg)", show=False
+            )
             for p in weather_grid:
                 if p["cape"] > 1500:
                     folium.CircleMarker(
@@ -147,64 +149,101 @@ def render_interactive_map(
             cape_group.add_to(m)
 
         if show_ctt_overlay:
-            ctt_group = folium.FeatureGroup(name="❄️ CTT Drop Rate (°C/hr)", show=False)
-            ctt_data = [[p["lat"], p["lon"], p["ctt_drop"]] for p in weather_grid]
-            HeatMap(ctt_data, name="CTT Drop Heatmap", min_opacity=0.35, max_zoom=10, radius=20, blur=15, gradient={0.4: 'cyan', 0.8: 'purple', 1.0: 'red'}).add_to(ctt_group)
+            ctt_group = folium.FeatureGroup(
+                name="❄️ CTT Drop Rate (°C/hr)", show=False
+            )
+            ctt_data = [
+                [p["lat"], p["lon"], p["ctt_drop"]] for p in weather_grid
+            ]
+            HeatMap(
+                ctt_data, name="CTT Drop Heatmap", min_opacity=0.35,
+                max_zoom=10, radius=20, blur=15,
+                gradient={0.4: 'cyan', 0.8: 'purple', 1.0: 'red'}
+            ).add_to(ctt_group)
             ctt_group.add_to(m)
 
     # 4. Critical Infrastructure Asset Markers Layer
     if assets_list:
-        asset_group = folium.FeatureGroup(name="🏢 Monitored Critical Assets", show=True)
-        
-        # Categorized marker colors
+        asset_group = folium.FeatureGroup(
+            name="🏢 Monitored Critical Assets", show=True
+        )
+
         category_colors = {
             "Power Substations": "red",
             "Construction Sites": "orange",
             "Telecom Towers": "blue",
             "Flood-Prone Areas": "purple"
         }
-        
+
         for asset in assets_list:
-            if selected_asset_types and asset["category"] not in selected_asset_types:
+            if selected_asset_types and (
+                asset["category"] not in selected_asset_types
+            ):
                 continue
-                
-            risk_color_hex = config.RISK_COLORS.get(asset["current_risk"], "#10B981")
+
+            risk_hex = config.RISK_COLORS.get(
+                asset["current_risk"], "#10B981"
+            )
             marker_color = category_colors.get(asset["category"], "gray")
-            
-            popup_html = f"""
-            <div style="font-family: Arial, sans-serif; width: 250px; color: #0F172A;">
-                <div style="background-color: #1E293B; color: #F8FAFC; padding: 6px; font-weight: bold; border-radius: 4px 4px 0 0;">
-                    {asset['name']}
-                </div>
-                <div style="padding: 8px; border: 1px solid #CBD5E1; border-radius: 0 0 4px 4px; background-color: #FFFFFF;">
-                    <p style="margin: 2px 0;"><b>Category:</b> {asset['category']}</p>
-                    <p style="margin: 2px 0;"><b>Status Threat:</b> <span style="color: {risk_color_hex}; font-weight: bold;">{asset['current_risk']} ({asset['risk_pct']}%)</span></p>
-                    <p style="margin: 2px 0;"><b>Vulnerability Index:</b> {asset['vulnerability_score']} / 10</p>
-                    <p style="margin: 2px 0;"><b>Est. Flood Depth:</b> {asset['submerge_depth_est_m']} m</p>
-                    <hr style="margin: 4px 0; border: 0; border-top: 1px solid #E2E8F0;">
-                    <p style="margin: 2px 0; font-size: 11px; color: #475569;"><b>Recommended Action:</b> {asset['action']}</p>
-                </div>
-            </div>
-            """
-            
+
+            popup_html = (
+                f'<div style="font-family: Arial, sans-serif; '
+                f'width: 250px; color: #0F172A;">'
+                f'<div style="background-color: #1E293B; color: #F8FAFC; '
+                f'padding: 6px; font-weight: bold; '
+                f'border-radius: 4px 4px 0 0;">'
+                f'{asset["name"]}'
+                f'</div>'
+                f'<div style="padding: 8px; border: 1px solid #CBD5E1; '
+                f'border-radius: 0 0 4px 4px; background-color: #FFFFFF;">'
+                f'<p style="margin: 2px 0;">'
+                f'<b>Category:</b> {asset["category"]}'
+                f'</p>'
+                f'<p style="margin: 2px 0;">'
+                f'<b>Status Threat:</b> '
+                f'<span style="color: {risk_hex}; font-weight: bold;">'
+                f'{asset["current_risk"]} ({asset["risk_pct"]}%)'
+                f'</span>'
+                f'</p>'
+                f'<p style="margin: 2px 0;">'
+                f'<b>Vulnerability Index:</b> '
+                f'{asset["vulnerability_score"]} / 10'
+                f'</p>'
+                f'<p style="margin: 2px 0;">'
+                f'<b>Est. Flood Depth:</b> '
+                f'{asset["submerge_depth_est_m"]} m'
+                f'</p>'
+                f'<hr style="margin: 4px 0; border: 0; '
+                f'border-top: 1px solid #E2E8F0;">'
+                f'<p style="margin: 2px 0; font-size: 11px; '
+                f'color: #475569;">'
+                f'<b>Action:</b> {asset["action"]}'
+                f'</p>'
+                f'</div>'
+                f'</div>'
+            )
+
             folium.Marker(
                 location=[asset["lat"], asset["lon"]],
                 popup=folium.Popup(popup_html, max_width=280),
                 tooltip=f"{asset['name']} [{asset['current_risk']}]",
-                icon=folium.Icon(color=marker_color, icon="info-sign", prefix="glyphicon")
+                icon=folium.Icon(
+                    color=marker_color,
+                    icon="info-sign",
+                    prefix="glyphicon"
+                   )
             ).add_to(asset_group)
 
         asset_group.add_to(m)
 
-    # 5. Add Layer Control to Map
+    # 5. Add Layer Control & Render
     folium.LayerControl(position="topright", collapsed=False).add_to(m)
 
-    # Render Map in Streamlit
     st_data = st_folium(
         m,
         width="100%",
         height=580,
         returned_objects=["last_active_drawing", "last_clicked"]
     )
-    
+
     return st_data
