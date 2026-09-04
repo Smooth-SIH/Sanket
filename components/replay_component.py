@@ -159,11 +159,11 @@ def render_historical_replay(historical_events: dict):
         xaxis_title="Event Timeline Progression",
         yaxis=dict(
             title="Rainfall Intensity (mm/h)",
-            titlefont=dict(color="#38BDF8")
+            title_font=dict(color="#38BDF8")
         ),
         yaxis2=dict(
             title="Nowcast Risk Level (%)",
-            titlefont=dict(color="#F59E0B"),
+            title_font=dict(color="#F59E0B"),
             overlaying="y", side="right"
         ),
         template="plotly_dark",

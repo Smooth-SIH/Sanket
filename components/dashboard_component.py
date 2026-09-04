@@ -323,12 +323,12 @@ def render_trend_charts(prediction_data: dict, features: dict):
             xaxis_title="History",
             yaxis=dict(
                 title="CAPE (J/kg)",
-                titlefont=dict(color="#F97316"),
+                title_font=dict(color="#F97316"),
                 tickfont=dict(color="#F97316")
             ),
             yaxis2=dict(
                 title="IWV (kg/m²)",
-                titlefont=dict(color="#06B6D4"),
+                title_font=dict(color="#06B6D4"),
                 tickfont=dict(color="#06B6D4"),
                 overlaying='y',
                 side='right'
