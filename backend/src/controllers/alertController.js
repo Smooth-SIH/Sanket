@@ -1,0 +1,120 @@
+let sampleAlerts = [
+  {
+    id: 'ALT-901',
+    title: 'EXTREME CLOUDBURST RISK - KEDARNATH / GARHWAL VALLEY',
+    hazardType: 'Cloudburst',
+    severity: 'CRITICAL',
+    riskScore: 96.4,
+    leadTimeMins: 28,
+    affectedRegion: 'Kedarnath Basin, Chamoli & Rudraprayag',
+    coordinates: [79.06, 30.73],
+    parameters: { IWV_mm: 64.2, CTT_K: 204.1, CAPE_Jkg: 3840, rain_rate_mmh: 112.5 },
+    acknowledged: false,
+    acknowledgedBy: null,
+    acknowledgedAt: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString()
+  },
+  {
+    id: 'ALT-902',
+    title: 'SEVERE CONVECTIVE THUNDERSTORM & HAILSTORM',
+    hazardType: 'Hailstorm',
+    severity: 'WARNING',
+    riskScore: 78.2,
+    leadTimeMins: 55,
+    affectedRegion: 'Kullu & Solan Hills, Himachal Pradesh',
+    coordinates: [77.10, 31.95],
+    parameters: { IWV_mm: 53.8, CTT_K: 216.0, CAPE_Jkg: 2950, rain_rate_mmh: 48.0 },
+    acknowledged: true,
+    acknowledgedBy: 'Officer Sharma (NDRF 8th Batt)',
+    acknowledgedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString()
+  },
+  {
+    id: 'ALT-903',
+    title: 'FLASH FLOOD SURGE INUNDATION ADVISORY',
+    hazardType: 'Flash Flood',
+    severity: 'CRITICAL',
+    riskScore: 91.0,
+    leadTimeMins: 35,
+    affectedRegion: 'Teesta River Basin, Sikkim Upper Catchment',
+    coordinates: [88.51, 27.53],
+    parameters: { IWV_mm: 61.5, CTT_K: 209.8, CAPE_Jkg: 3100, rain_rate_mmh: 94.0 },
+    acknowledged: false,
+    acknowledgedBy: null,
+    acknowledgedAt: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 24).toISOString()
+  },
+  {
+    id: 'ALT-904',
+    title: 'HIGH INTENSITY MESOSCALE CONVECTIVE SYSTEM',
+    hazardType: 'Severe Thunderstorm',
+    severity: 'WATCH',
+    riskScore: 54.0,
+    leadTimeMins: 110,
+    affectedRegion: 'Wayanad Plateau & Nilgiri Foothills',
+    coordinates: [76.13, 11.68],
+    parameters: { IWV_mm: 48.2, CTT_K: 228.4, CAPE_Jkg: 2100, rain_rate_mmh: 28.0 },
+    acknowledged: true,
+    acknowledgedBy: 'SDMA Command Officer',
+    acknowledgedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString()
+  }
+];
+
+export const getAlerts = async (req, res) => {
+  const { hazard, severity, acknowledged } = req.query;
+  let filtered = [...sampleAlerts];
+
+  if (hazard) {
+    filtered = filtered.filter(a => a.hazardType.toLowerCase() === hazard.toLowerCase());
+  }
+  if (severity) {
+    filtered = filtered.filter(a => a.severity.toLowerCase() === severity.toLowerCase());
+  }
+  if (acknowledged !== undefined) {
+    const isAck = acknowledged === 'true';
+    filtered = filtered.filter(a => a.acknowledged === isAck);
+  }
+
+  return res.json({
+    total: filtered.length,
+    activeCount: sampleAlerts.filter(a => !a.acknowledged).length,
+    criticalCount: sampleAlerts.filter(a => a.severity === 'CRITICAL').length,
+    alerts: filtered
+  });
+};
+
+export const acknowledgeAlert = async (req, res) => {
+  const alert = sampleAlerts.find(a => a.id === req.params.id);
+  if (!alert) return res.status(404).json({ message: 'Alert not found' });
+
+  alert.acknowledged = true;
+  alert.acknowledgedBy = req.body.officerName || 'Command Officer (Web Console)';
+  alert.acknowledgedAt = new Date().toISOString();
+
+  return res.json({
+    message: 'Alert successfully acknowledged',
+    alert
+  });
+};
+
+export const createManualAlert = async (req, res) => {
+  const { title, hazardType, severity, affectedRegion, riskScore, leadTimeMins } = req.body;
+  const newAlert = {
+    id: `ALT-${Date.now()}`,
+    title: title || `MANUAL ${hazardType} WARNING`,
+    hazardType: hazardType || 'Cloudburst',
+    severity: severity || 'WARNING',
+    riskScore: parseFloat(riskScore || 75.0),
+    leadTimeMins: parseInt(leadTimeMins || 45),
+    affectedRegion: affectedRegion || 'Central Himalayas',
+    coordinates: [78.5, 30.5],
+    parameters: { IWV_mm: 56.0, CTT_K: 210.0, CAPE_Jkg: 3000, rain_rate_mmh: 60.0 },
+    acknowledged: false,
+    acknowledgedBy: null,
+    acknowledgedAt: null,
+    createdAt: new Date().toISOString()
+  };
+  sampleAlerts.unshift(newAlert);
+  return res.status(201).json(newAlert);
+};

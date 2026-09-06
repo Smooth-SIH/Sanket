@@ -1,26 +1,64 @@
 version: '3.8'
 
 services:
-  sanket-backend:
+  mongodb:
+    image: mongo:6.0
+    container_name: sanket-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: sanket_db
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: sanket-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  ml-service:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: sanket_fastapi_backend
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: sanket-ml-service
+    restart: always
     ports:
       - "8000:8000"
     environment:
       - PORT=8000
-    restart: always
 
-  sanket-frontend:
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: sanket_streamlit_frontend
-    ports:
-      - "8501:8501"
-    environment:
-      - SANKET_API_URL=http://sanket-backend:8000
-    depends_on:
-      - sanket-backend
+    container_name: sanket-backend
     restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/sanket_db
+      - REDIS_URI=redis://redis:6379
+      - ML_SERVICE_URL=http://ml-service:8000
+      - JWT_SECRET=sanket_super_secret_jwt_key_sih2026
+    depends_on:
+      - mongodb
+      - redis
+      - ml-service
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sanket-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:

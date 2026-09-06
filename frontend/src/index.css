@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #050c17;
+    color: #f1f5f9;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, .font-orbitron {
+    font-family: 'Orbitron', sans-serif;
+  }
+}
+
+/* Glassmorphism Design System */
+.glass-panel {
+  background: rgba(10, 22, 40, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-panel-danger {
+  background: rgba(25, 10, 15, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(239, 68, 68, 0.2);
+}
+
+.glass-nav {
+  background: rgba(5, 12, 23, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.12);
+}
+
+/* Glow & Shimmer Effects */
+.glow-text-cyan {
+  text-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+}
+
+.glow-text-orange {
+  text-shadow: 0 0 12px rgba(255, 107, 53, 0.6);
+}
+
+.glow-box-cyan {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
+}
+
+/* Leaflet Dark Theme Overlays */
+.leaflet-container {
+  background: #050c17 !important;
+  font-family: 'Inter', sans-serif;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: rgba(10, 22, 40, 0.95) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  backdrop-filter: blur(12px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #050c17;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00d4ff;
+}
