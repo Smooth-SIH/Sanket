@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export const apiClient = axios.create({
   baseURL: API_BASE,
@@ -23,7 +23,8 @@ let socket = null;
 
 export const initSocket = (onSatelliteUpdate, onCriticalAlert, onConnectStatus) => {
   if (!socket) {
-    socket = io(window.location.origin, {
+    const socketUrl = import.meta.env.VITE_BACKEND_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : window.location.origin);
+    socket = io(socketUrl, {
       reconnectionAttempts: 10,
       timeout: 5000
     });
