@@ -24,7 +24,7 @@ export const HowItWorks = () => {
       step: '03',
       title: 'Geo-Spatial Alert & Asset Shielding',
       subtitle: 'Hyper-Local Emergency Dispatch',
-      description: 'Generates GeoJSON hazard polygons, evaluates proximity to hydro dams and power grids, and dispatches real-time WebSocket alerts to NDRF command centers.',
+      description: 'Generates GeoJSON hazard polygons, evaluates proximity to hydro dams and power grids, and dispatches real-time WebSocket alerts to emergency command centers.',
       icon: ShieldAlert,
       color: 'from-red-500/20 to-rose-500/20 text-red-400 border-red-500/40'
     }

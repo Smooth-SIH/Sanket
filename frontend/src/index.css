@@ -49,10 +49,19 @@
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
 }
 
-/* Leaflet Dark Theme Overlays */
+/* Leaflet Dark Theme Overlays & Robust Container */
 .leaflet-container {
+  height: 650px !important;
+  min-height: 550px !important;
+  width: 100% !important;
   background: #050c17 !important;
   font-family: 'Inter', sans-serif;
+  border-radius: 1.5rem;
+  z-index: 1;
+}
+
+.map-tiles-dark {
+  filter: brightness(0.65) invert(1) contrast(2.8) hue-rotate(200deg) saturate(0.35);
 }
 
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {

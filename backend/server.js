@@ -73,7 +73,6 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, async () => {
   console.log(`==================================================`);
   console.log(`  SANKET Express Backend Running on Port ${PORT}`);
-  console.log(`  Targeting Smart India Hackathon 2026`);
   console.log(`==================================================`);
 
   await connectDB();

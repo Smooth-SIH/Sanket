@@ -1,22 +1,9 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sanket_super_secret_jwt_key_sih2026';
-
-// Mock users store for fallback/dev
-const mockUsers = [
-  {
-    id: 'usr-1',
-    name: 'Command Officer',
-    email: 'officer@sanket.gov.in',
-    passwordHash: '$2a$10$X8a.jR4l51hL6y21r5S3.eQWJ7eR5oG.9j.8d7s6a5f4e3d2c1b0', // demo
-    role: 'DISASTER_OFFICER',
-    organization: 'NDRF Command Cell'
-  }
-];
+const JWT_SECRET = process.env.JWT_SECRET || 'sanket_super_secret_jwt_key';
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
   
   const token = jwt.sign(
     { id: 'usr-1', email: email || 'officer@sanket.gov.in', role: 'DISASTER_OFFICER', name: 'Command Officer' },
@@ -31,7 +18,7 @@ export const login = async (req, res) => {
       name: 'Command Officer',
       email: email || 'officer@sanket.gov.in',
       role: 'DISASTER_OFFICER',
-      organization: 'NDRF / MOSDAC Severe Weather Wing',
+      organization: 'MOSDAC Severe Weather Wing',
       preferences: { alertThresholdIWV: 50.0, enableWebsockets: true, theme: 'dark' }
     }
   });
@@ -65,7 +52,7 @@ export const getMe = async (req, res) => {
       name: 'Command Officer',
       email: 'officer@sanket.gov.in',
       role: 'DISASTER_OFFICER',
-      organization: 'NDRF / MOSDAC Severe Weather Wing'
+      organization: 'MOSDAC Severe Weather Wing'
     }
   });
 };

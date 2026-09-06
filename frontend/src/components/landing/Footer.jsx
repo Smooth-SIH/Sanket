@@ -20,7 +20,7 @@ export const Footer = () => {
               <span className="font-orbitron font-extrabold text-lg text-white">SANKET</span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-              AI-driven hyper-local severe weather nowcasting system. Smart India Hackathon 2026. 
+              AI-driven hyper-local severe weather nowcasting system. 
               Integrated with ISRO MOSDAC INSAT-3D/3DR satellite telemetry.
             </p>
           </div>
@@ -51,7 +51,7 @@ export const Footer = () => {
         </div>
 
         <div className="pt-8 border-t border-slate-900 flex flex-wrap justify-between items-center text-slate-500 font-mono text-[11px]">
-          <p>© 2026 SANKET Weather Warning System • Smart India Hackathon 2026</p>
+          <p>© 2026 SANKET Weather Warning System</p>
           <p>Built with MERN Stack + Python FastAPI</p>
         </div>
 

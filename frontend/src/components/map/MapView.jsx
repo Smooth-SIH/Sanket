@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Play, Pause, RotateCcw, Layers, ShieldAlert, Navigation } from 'lucide-react';
+import { Play, Pause, RotateCcw, ShieldAlert } from 'lucide-react';
 import { fetchMapRiskZones, fetchAssets, fetchSatelliteTimeline } from '../../services/api';
 
-// Custom Map Marker Icons
+// Leaflet Map Resize Helper Component
+const MapResizeHandler = () => {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+};
+
+// Custom Marker Icons
 const createCustomIcon = (color) => {
   return L.divIcon({
     className: 'custom-leaflet-marker',
-    html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #050c17; box-shadow: 0 0 12px ${color}; animate: pulse 2s infinite;"></div>`,
+    html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #050c17; box-shadow: 0 0 12px ${color};"></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8]
   });
@@ -36,7 +48,9 @@ export const MapView = () => {
         setRiskZones(zonesRes.features || []);
         setAssets(assetsRes.assets || []);
         setTimelineFrames(timelineRes.frames || []);
-        setCurrentFrameIndex((timelineRes.frames || []).length - 1);
+        if (timelineRes.frames && timelineRes.frames.length > 0) {
+          setCurrentFrameIndex(timelineRes.frames.length - 1);
+        }
       } catch (err) {
         console.error('Failed to load map data:', err);
       }
@@ -44,7 +58,7 @@ export const MapView = () => {
     loadData();
   }, []);
 
-  // Timeline Slider Animation Loop
+  // Timeline Animation Loop
   useEffect(() => {
     let timer;
     if (isPlaying && timelineFrames.length > 0) {
@@ -62,25 +76,27 @@ export const MapView = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] relative flex flex-col">
+    <div className="min-h-[calc(100vh-80px)] py-4 px-4 lg:px-8 max-w-7xl mx-auto space-y-4">
       
-      {/* Top Floating Map Controls Bar */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap items-center justify-between gap-4 pointer-events-none">
+      {/* Top Map Header & Controls */}
+      <div className="p-4 rounded-2xl glass-panel border border-slate-800 flex flex-wrap items-center justify-between gap-4">
         
-        <div className="glass-panel p-3 rounded-2xl border border-cyan-500/30 shadow-glow-cyan pointer-events-auto flex items-center space-x-3">
-          <ShieldAlert className="w-6 h-6 text-cyan-400" />
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
+            <ShieldAlert className="w-5 h-5 text-cyan-400" />
+          </div>
           <div>
-            <h2 className="font-orbitron font-bold text-sm text-white">SANKET GEOSPATIAL HAZARD MAP</h2>
-            <p className="text-[11px] text-slate-400 font-mono">INSAT-3D 2DSphere Spatial Overlays</p>
+            <h2 className="font-orbitron font-bold text-base text-white">SANKET GEOSPATIAL HAZARD MAP</h2>
+            <p className="text-xs text-slate-400 font-mono">INSAT-3D 2DSphere Spatial Overlays</p>
           </div>
         </div>
 
-        {/* Layer Toggle Chips */}
-        <div className="glass-panel p-2 rounded-2xl border border-slate-800 pointer-events-auto flex items-center space-x-2">
+        {/* Layer Toggle Buttons */}
+        <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowPolygons(!showPolygons)}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-colors ${
-              showPolygons ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
+              showPolygons ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold' : 'text-slate-400 hover:bg-slate-800'
             }`}
           >
             Polygon Hazards ({riskZones.length})
@@ -89,7 +105,7 @@ export const MapView = () => {
           <button
             onClick={() => setShowAssets(!showAssets)}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-colors ${
-              showAssets ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'text-slate-400'
+              showAssets ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold' : 'text-slate-400 hover:bg-slate-800'
             }`}
           >
             Infrastructure Assets ({assets.length})
@@ -99,17 +115,20 @@ export const MapView = () => {
       </div>
 
       {/* Leaflet Map Container */}
-      <div className="flex-1 w-full h-[650px] relative z-0">
+      <div className="w-full rounded-3xl overflow-hidden border border-slate-800 shadow-glass relative">
         <MapContainer
-          center={[28.0, 80.0]}
+          center={[24.5937, 78.9629]}
           zoom={5}
           scrollWheelZoom={true}
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: '100%', height: '650px' }}
         >
-          {/* CartoDB Dark Basemap Tiles */}
+          <MapResizeHandler />
+
+          {/* High Availability OpenStreetMap Dark Filter Tiles */}
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className="map-tiles-dark"
           />
 
           {/* Risk Zone Polygons */}
@@ -122,9 +141,8 @@ export const MapView = () => {
                 pathOptions={{
                   color: feature.properties.color || '#ef4444',
                   fillColor: feature.properties.color || '#ef4444',
-                  fillOpacity: 0.35,
-                  weight: 2,
-                  dashArray: '4'
+                  fillOpacity: 0.4,
+                  weight: 2.5
                 }}
               >
                 <Popup>
@@ -133,7 +151,7 @@ export const MapView = () => {
                     <p className="text-slate-300">Hazard: <strong className="text-white">{feature.properties.hazard}</strong></p>
                     <p className="text-slate-300">IWV Accumulation: <strong className="text-cyan-300">{feature.properties.iwv} mm</strong></p>
                     <p className="text-slate-300">Cloud Top Temp: <strong className="text-sky-300">{feature.properties.ctt} K</strong></p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white">
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white uppercase">
                       {feature.properties.severity} HAZARD ZONE
                     </span>
                   </div>
@@ -142,7 +160,7 @@ export const MapView = () => {
             );
           })}
 
-          {/* Asset Markers */}
+          {/* Infrastructure Asset Markers */}
           {showAssets && assets.map((asset) => (
             <Marker
               key={asset.id}
@@ -158,7 +176,7 @@ export const MapView = () => {
                   <h4 className="font-orbitron font-bold text-white text-sm">{asset.name}</h4>
                   <p className="text-slate-400">Category: <strong className="text-slate-200">{asset.category}</strong></p>
                   <p className="text-slate-400">Region: <strong className="text-slate-200">{asset.region}</strong></p>
-                  <p className="text-slate-400">Hazard Proximity: <strong className="text-orange-400">{asset.distanceToHazardKm} km</strong></p>
+                  <p className="text-slate-400">Hazard Distance: <strong className="text-orange-400">{asset.distanceToHazardKm} km</strong></p>
                   <div className="mt-2 text-center">
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-cyan-300 border border-cyan-500/30">
                       STATUS: {asset.currentRiskStatus}
@@ -173,7 +191,7 @@ export const MapView = () => {
       </div>
 
       {/* Bottom Timeline Replay Slider Control Bar */}
-      <div className="absolute bottom-4 left-4 right-4 z-[1000] glass-panel p-4 rounded-2xl border border-slate-800 pointer-events-auto">
+      <div className="p-4 rounded-2xl glass-panel border border-slate-800">
         <div className="flex flex-wrap items-center justify-between gap-4">
           
           <div className="flex items-center space-x-3">
@@ -186,7 +204,7 @@ export const MapView = () => {
 
             <button
               onClick={() => { setIsPlaying(false); setCurrentFrameIndex(0); }}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -197,7 +215,7 @@ export const MapView = () => {
             </div>
           </div>
 
-          {/* Timeline Range Slider */}
+          {/* Range Slider */}
           <div className="flex-1 max-w-xl mx-4">
             <input
               type="range"

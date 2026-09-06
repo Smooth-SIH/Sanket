@@ -19,7 +19,6 @@ import { MapView } from './components/map/MapView';
 import { AlertCenterView } from './components/alerts/AlertCenterView';
 import { AssetManagementView } from './components/assets/AssetManagementView';
 import { AnalyticsView } from './components/analytics/AnalyticsView';
-import { SettingsView } from './components/settings/SettingsView';
 
 import { initSocket } from './services/api';
 import { setLatestScan, setLiveConnected } from './store/slices/satelliteSlice';
@@ -59,8 +58,6 @@ export default function App() {
         return <AssetManagementView />;
       case 'analytics':
         return <AnalyticsView />;
-      case 'settings':
-        return <SettingsView />;
       case 'landing':
       default:
         return (

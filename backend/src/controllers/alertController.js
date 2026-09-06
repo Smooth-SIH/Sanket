@@ -25,7 +25,7 @@ let sampleAlerts = [
     coordinates: [77.10, 31.95],
     parameters: { IWV_mm: 53.8, CTT_K: 216.0, CAPE_Jkg: 2950, rain_rate_mmh: 48.0 },
     acknowledged: true,
-    acknowledgedBy: 'Officer Sharma (NDRF 8th Batt)',
+    acknowledgedBy: 'Command Officer',
     acknowledgedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString()
   },
@@ -55,7 +55,7 @@ let sampleAlerts = [
     coordinates: [76.13, 11.68],
     parameters: { IWV_mm: 48.2, CTT_K: 228.4, CAPE_Jkg: 2100, rain_rate_mmh: 28.0 },
     acknowledged: true,
-    acknowledgedBy: 'SDMA Command Officer',
+    acknowledgedBy: 'Command Officer',
     acknowledgedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
     createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString()
   }
@@ -89,7 +89,7 @@ export const acknowledgeAlert = async (req, res) => {
   if (!alert) return res.status(404).json({ message: 'Alert not found' });
 
   alert.acknowledged = true;
-  alert.acknowledgedBy = req.body.officerName || 'Command Officer (Web Console)';
+  alert.acknowledgedBy = req.body.officerName || 'Command Officer';
   alert.acknowledgedAt = new Date().toISOString();
 
   return res.json({

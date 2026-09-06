@@ -6,11 +6,11 @@ const initialState = {
     name: 'Command Center Officer',
     email: 'officer@sanket.gov.in',
     role: 'DISASTER_OFFICER',
-    organization: 'NDRF / MOSDAC Severe Weather Wing'
+    organization: 'MOSDAC Severe Weather Wing'
   },
-  token: localStorage.getItem('sanket_token') || 'demo_token_sih2026',
+  token: localStorage.getItem('sanket_token') || 'demo_token',
   isAuthenticated: true,
-  currentView: 'landing' // 'landing' | 'dashboard' | 'map' | 'alerts' | 'assets' | 'analytics' | 'settings'
+  currentView: 'landing' // 'landing' | 'dashboard' | 'map' | 'alerts' | 'assets' | 'analytics'
 };
 
 export const authSlice = createSlice({

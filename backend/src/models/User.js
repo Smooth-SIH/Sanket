@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['DISASTER_OFFICER', 'ANALYST', 'ADMIN'], default: 'DISASTER_OFFICER' },
-  organization: { type: String, default: 'NDRF / MOSDAC Weather Wing' },
+  organization: { type: String, default: 'MOSDAC Weather Wing' },
   preferences: {
     alertThresholdIWV: { type: Number, default: 50.0 },
     enableWebsockets: { type: Boolean, default: true },

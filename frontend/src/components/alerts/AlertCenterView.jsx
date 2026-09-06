@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AlertTriangle, CheckCircle2, ShieldAlert, Filter, Clock, Check, UserCheck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Filter, UserCheck } from 'lucide-react';
 import { fetchAlerts, acknowledgeAlertApi } from '../../services/api';
 import { setAlerts, acknowledgeAlertInState } from '../../store/slices/alertSlice';
 
@@ -10,8 +10,7 @@ export const AlertCenterView = () => {
   const [selectedHazard, setSelectedHazard] = useState('ALL');
   const [selectedSeverity, setSelectedSeverity] = useState('ALL');
   const [ackModalAlert, setAckModalAlert] = useState(null);
-  const [officerNameInput, setOfficerNameInput] = useState('Commander Rawat (NDRF)');
-  const [loading, setLoading] = useState(true);
+  const [officerNameInput, setOfficerNameInput] = useState('Command Officer');
 
   useEffect(() => {
     const loadAlerts = async () => {
@@ -20,8 +19,6 @@ export const AlertCenterView = () => {
         dispatch(setAlerts(data.alerts || []));
       } catch (err) {
         console.error('Failed to load alerts:', err);
-      } finally {
-        setLoading(false);
       }
     };
     loadAlerts();

@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
 import { setCurrentView } from '../../store/slices/authSlice';
-import { ShieldAlert, Radio, ArrowRight, Play, Cpu, Layers } from 'lucide-react';
+import { Radio, ArrowRight, Layers } from 'lucide-react';
 
 export const HeroSection = () => {
   const dispatch = useDispatch();
@@ -19,7 +19,7 @@ export const HeroSection = () => {
           className="inline-flex items-center space-x-2.5 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono mb-8 shadow-glow-cyan"
         >
           <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
-          <span>INSAT-3D / 3DR Live MOSDAC Data Integration • SIH 2026</span>
+          <span>INSAT-3D / 3DR Live MOSDAC Data Integration</span>
         </motion.div>
 
         {/* Hero Title & Description */}

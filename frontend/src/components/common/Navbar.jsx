@@ -8,10 +8,8 @@ import {
   Bell, 
   Boxes, 
   BarChart3, 
-  Settings, 
   Radio, 
-  Compass,
-  UserCheck
+  Compass
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -27,8 +25,7 @@ export const Navbar = () => {
     { id: 'map', label: 'Geo Map', icon: Map },
     { id: 'alerts', label: 'Alert Center', icon: Bell, badge: activeAlertCount },
     { id: 'assets', label: 'Asset Tracker', icon: Boxes },
-    { id: 'analytics', label: 'ML Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'analytics', label: 'ML Analytics', icon: BarChart3 }
   ];
 
   return (
@@ -48,9 +45,6 @@ export const Navbar = () => {
             <div className="flex items-center space-x-2">
               <span className="font-orbitron font-extrabold text-xl tracking-wider bg-gradient-to-r from-cyan-400 via-sky-300 to-orange-400 bg-clip-text text-transparent">
                 SANKET
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                SIH 2026
               </span>
             </div>
             <p className="text-[10px] text-slate-400 tracking-tight font-inter">
@@ -87,23 +81,15 @@ export const Navbar = () => {
           })}
         </nav>
 
-        {/* Live Satellite Status Pill & Officer Badge */}
+        {/* Live Satellite Status Pill */}
         <div className="flex items-center space-x-4">
-          <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs">
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs">
             <Radio className={`w-3.5 h-3.5 ${isLiveConnected ? 'text-emerald-400 animate-pulse' : 'text-orange-400'}`} />
             <span className="text-slate-300 text-[11px] font-mono">
               {latestScan?.satellite || 'INSAT-3DR MOSDAC'}
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
           </div>
-
-          <button 
-            onClick={() => dispatch(setCurrentView('settings'))}
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 text-xs transition-colors"
-          >
-            <UserCheck className="w-4 h-4 text-cyan-400" />
-            <span className="hidden md:inline font-mono font-medium">NDRF Commander</span>
-          </button>
         </div>
 
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Award, Landmark, CheckCircle2 } from 'lucide-react';
+import { Shield, Landmark, CheckCircle2 } from 'lucide-react';
 
 export const TrustSection = () => {
   return (
@@ -10,12 +10,12 @@ export const TrustSection = () => {
           
           <div>
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs font-mono mb-4">
-              <Award className="w-4 h-4" />
-              <span>SMART INDIA HACKATHON 2026</span>
+              <Shield className="w-4 h-4" />
+              <span>SEVERE WEATHER MITIGATION</span>
             </div>
 
             <h2 className="font-orbitron text-3xl sm:text-4xl font-bold text-white tracking-tight leading-snug">
-              ENGINEERED FOR NATIONAL DISASTER RESILIENCE
+              ENGINEERED FOR ATMOSPHERIC DISASTER RESILIENCE
             </h2>
 
             <p className="mt-4 text-slate-300 text-base font-light leading-relaxed">
@@ -26,8 +26,8 @@ export const TrustSection = () => {
             <div className="mt-8 space-y-4">
               {[
                 'Direct ISRO MOSDAC INSAT-3D Sounder Telemetry Pipeline',
-                'NDRF & State Emergency Operation Centre Audit Compliance',
-                'SHAP Transparent Explainable AI for Disaster Commanders',
+                'State Emergency Operation Centre Audit Compliance',
+                'SHAP Transparent Explainable AI for Command Operations',
                 'GeoJSON 2DSphere Spatial Querying for High-Value Infrastructure'
               ].map((item, idx) => (
                 <div key={idx} className="flex items-center space-x-3 text-sm text-slate-200">
@@ -52,8 +52,8 @@ export const TrustSection = () => {
             </p>
 
             <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono flex items-center justify-between text-cyan-400">
-              <span>SIH Problem Statement: Severe Weather Nowcasting</span>
-              <span className="text-emerald-400 font-bold">READY FOR SIH 2026</span>
+              <span>Atmospheric Physics & Convective Ingestion</span>
+              <span className="text-emerald-400 font-bold">OPERATIONAL</span>
             </div>
           </div>
 
