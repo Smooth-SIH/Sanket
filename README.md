@@ -1,10 +1,10 @@
-# SANKET — Hyper-local Severe Weather Nowcasting System 🛰️⚡
+# SANKET — Hyper-local Severe Weather Nowcasting System
 
 **SANKET** is an AI-driven, hyper-local severe weather nowcasting system engineered to predict micro-scale cloudbursts, flash floods, severe thunderstorms, and hailstorms with lead times up to 45 minutes by ingesting real-time ISRO MOSDAC INSAT-3D/3DR satellite sounder telemetry.
 
 ---
 
-## 🛠️ 1. Technologies Used
+## 1. Technologies Used
 
 ### Programming Languages
 
@@ -36,7 +36,7 @@
 
 ---
 
-## 📐 2. Methodology & Process for Implementation
+## 2. Methodology & Process for Implementation
 
 ### System Architecture & Data Flow Diagram
 
@@ -91,41 +91,3 @@ flowchart TD
    - Emergency alert center with officer acknowledgment tracking.
 
 ---
-
-## 🚀 Working Prototype Setup
-
-### Running via Docker Compose
-
-```bash
-docker compose up --build
-```
-
-Access the working prototype at **`http://localhost`**.
-
-### Standalone Local Setup (Without Docker)
-
-1. **Start Python ML Microservice**:
-
-   ```bash
-   cd ml-service
-   pip install -r requirements.txt
-   python main.py
-   ```
-
-2. **Start Node.js Backend**:
-
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   ```
-
-3. **Start React Frontend**:
-
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-Open browser to **`http://localhost:3000`**.
