@@ -8,7 +8,6 @@ import { HeroSection } from './components/landing/HeroSection';
 import { FeaturesGrid } from './components/landing/FeaturesGrid';
 import { HowItWorks } from './components/landing/HowItWorks';
 import { LivePreview } from './components/landing/LivePreview';
-import { TechStackBadges } from './components/landing/TechStackBadges';
 import { StatsCounter } from './components/landing/StatsCounter';
 import { TrustSection } from './components/landing/TrustSection';
 import { CallToAction } from './components/landing/CallToAction';
@@ -66,7 +65,6 @@ export default function App() {
             <FeaturesGrid />
             <HowItWorks />
             <LivePreview />
-            <TechStackBadges />
             <StatsCounter />
             <TrustSection />
             <CallToAction />
