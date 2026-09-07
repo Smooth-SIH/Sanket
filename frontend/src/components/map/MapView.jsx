@@ -109,7 +109,7 @@ export const MapView = () => {
   const [timelineFrames, setTimelineFrames] = useState([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [mapMode, setMapMode] = useState('TACTICAL');
+  
   const [showPolygons, setShowPolygons] = useState(true);
   const [showCapitals, setShowCapitals] = useState(true);
   const [showAssets, setShowAssets] = useState(true);
@@ -165,6 +165,8 @@ export const MapView = () => {
 
   return (
     <div className="min-h-[calc(100vh-80px)] py-4 px-4 lg:px-8 max-w-7xl mx-auto space-y-4 font-inter text-slate-100">
+      
+      {/* Top Header & Search Bar */}
       <div className="p-4 rounded-2xl glass-panel border border-slate-800 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
@@ -179,22 +181,6 @@ export const MapView = () => {
               <p className="text-xs text-slate-400 font-mono">MOSDAC INSAT-3D 2DSphere Telemetry • Official Territorial Boundary Overlays</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setMapMode('TACTICAL')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${mapMode === 'TACTICAL' ? 'bg-cyan-500 text-black font-bold shadow-glow-cyan' : 'text-slate-400 hover:text-white'}`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>TACTICAL GIS MAP</span>
-            </button>
-            <button
-              onClick={() => setMapMode('REFERENCE_MAP')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${mapMode === 'REFERENCE_MAP' ? 'bg-purple-500 text-white font-bold shadow-glow-purple' : 'text-slate-400 hover:text-white'}`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>OFFICIAL INDIA MAP OVERLAY</span>
-            </button>
-          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
@@ -202,7 +188,7 @@ export const MapView = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search Indian State, UT or Capital..."
+              placeholder="Search Indian State, UT or Capital (e.g. Uttarakhand, Sikkim, Leh)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
@@ -236,79 +222,84 @@ export const MapView = () => {
         </div>
       </div>
 
+      {/* Tactical Leaflet GIS Map Container */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 relative">
         <div className="lg:col-span-3 rounded-3xl overflow-hidden border border-slate-800 shadow-glass relative bg-[#050c17] min-h-[620px]">
-          {mapMode === 'TACTICAL' ? (
-            <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom={true} style={{ width: '100%', height: '620px' }}>
-              <MapFocusHandler center={mapCenter} zoom={mapZoom} />
-              <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" className="map-tiles-dark" />
-              {showPolygons && riskZones.map((feature) => {
-                const coords = feature.geometry.coordinates[0].map(([lon, lat]) => [lat, lon]);
-                const isSelected = selectedRegion?.name === feature.properties.state;
-                return (
-                  <Polygon key={feature.properties.id} positions={coords} eventHandlers={{ click: () => { const matched = INDIA_REGIONS.find(r => r.name === feature.properties.state); if (matched) handleSelectRegion(matched); } }} pathOptions={{ color: isSelected ? '#00d4ff' : (feature.properties.color || '#ef4444'), fillColor: feature.properties.color || '#ef4444', fillOpacity: isSelected ? 0.65 : 0.4, weight: isSelected ? 3.5 : 2 }}>
-                    <Popup>
-                      <div className="p-2 font-inter text-xs space-y-1">
-                        <div className="flex items-center justify-between border-b border-slate-700 pb-1">
-                          <span className="font-orbitron font-bold text-cyan-400 text-sm">{feature.properties.state}</span>
-                          <span className="text-[10px] font-mono text-slate-400">({feature.properties.capital})</span>
-                        </div>
-                        <p className="text-slate-200 mt-1 font-bold">{feature.properties.name}</p>
-                        <p className="text-slate-300">Hazard: <strong className="text-orange-400">{feature.properties.hazard}</strong></p>
-                        <p className="text-slate-300">IWV Density: <strong className="text-cyan-300">{feature.properties.iwv} mm</strong></p>
-                        <p className="text-slate-300">Cloud Top Temp: <strong className="text-sky-300">{feature.properties.ctt} K</strong></p>
-                        <div className="mt-2 pt-1 flex items-center justify-between">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white uppercase">{feature.properties.severity} HAZARD</span>
-                          <span className="font-orbitron font-bold text-cyan-300 text-xs">SCORE: {feature.properties.riskScore || 90}%</span>
-                        </div>
-                      </div>
-                    </Popup>
-                  </Polygon>
-                );
-              })}
-              {showCapitals && INDIA_REGIONS.map((reg) => (
-                <Marker key={reg.name} position={[reg.lat, reg.lon]} icon={createCapitalIcon(reg.isCountryCapital)} eventHandlers={{ click: () => handleSelectRegion(reg) }}>
-                  <Popup>
-                    <div className="p-2 text-xs space-y-1 font-inter">
-                      <h4 className="font-orbitron font-bold text-white text-sm">{reg.capital} {reg.isCountryCapital && '(NATIONAL CAPITAL)'}</h4>
-                      <p className="text-slate-300">Territory: <strong className="text-cyan-400">{reg.name} ({reg.type})</strong></p>
-                      <p className="text-slate-300">Current Hazard: <strong className="text-orange-400">{reg.hazard}</strong></p>
-                      <p className="text-slate-300">MOSDAC Risk Score: <strong className="text-red-400">{reg.riskScore}%</strong></p>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-              {showAssets && assets.map((asset) => (
-                <Marker key={asset.id} position={[asset.lat, asset.lon]} icon={createAssetIcon(asset.currentRiskStatus)}>
+          <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom={true} style={{ width: '100%', height: '620px' }}>
+            <MapFocusHandler center={mapCenter} zoom={mapZoom} />
+            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" className="map-tiles-dark" />
+            
+            {showPolygons && riskZones.map((feature) => {
+              const coords = feature.geometry.coordinates[0].map(([lon, lat]) => [lat, lon]);
+              const isSelected = selectedRegion?.name === feature.properties.state;
+              return (
+                <Polygon 
+                  key={feature.properties.id} 
+                  positions={coords} 
+                  eventHandlers={{ 
+                    click: () => { 
+                      const matched = INDIA_REGIONS.find(r => r.name === feature.properties.state); 
+                      if (matched) handleSelectRegion(matched); 
+                    } 
+                  }} 
+                  pathOptions={{ 
+                    color: isSelected ? '#00d4ff' : (feature.properties.color || '#ef4444'), 
+                    fillColor: feature.properties.color || '#ef4444', 
+                    fillOpacity: isSelected ? 0.65 : 0.4, 
+                    weight: isSelected ? 3.5 : 2 
+                  }}
+                >
                   <Popup>
                     <div className="p-2 font-inter text-xs space-y-1">
-                      <h4 className="font-orbitron font-bold text-white text-sm">{asset.name}</h4>
-                      <p className="text-slate-400">Category: <strong className="text-slate-200">{asset.category}</strong></p>
-                      <p className="text-slate-400">Region: <strong className="text-slate-200">{asset.region}</strong></p>
-                      <p className="text-slate-400">Hazard Distance: <strong className="text-orange-400">{asset.distanceToHazardKm} km</strong></p>
-                      <div className="mt-2 text-center">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-cyan-300 border border-cyan-500/30">STATUS: {asset.currentRiskStatus}</span>
+                      <div className="flex items-center justify-between border-b border-slate-700 pb-1">
+                        <span className="font-orbitron font-bold text-cyan-400 text-sm">{feature.properties.state}</span>
+                        <span className="text-[10px] font-mono text-slate-400">({feature.properties.capital})</span>
+                      </div>
+                      <p className="text-slate-200 mt-1 font-bold">{feature.properties.name}</p>
+                      <p className="text-slate-300">Hazard: <strong className="text-orange-400">{feature.properties.hazard}</strong></p>
+                      <p className="text-slate-300">IWV Density: <strong className="text-cyan-300">{feature.properties.iwv} mm</strong></p>
+                      <p className="text-slate-300">Cloud Top Temp: <strong className="text-sky-300">{feature.properties.ctt} K</strong></p>
+                      <div className="mt-2 pt-1 flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white uppercase">{feature.properties.severity} HAZARD</span>
+                        <span className="font-orbitron font-bold text-cyan-300 text-xs">SCORE: {feature.properties.riskScore || 90}%</span>
                       </div>
                     </div>
                   </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          ) : (
-            <div className="relative w-full h-[620px] bg-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden">
-              <div className="relative max-w-full max-h-full rounded-2xl overflow-hidden border border-slate-700 shadow-2xl">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/India_map_en.svg" alt="Official Map of India" className="max-h-[580px] w-auto object-contain mx-auto filter brightness-90 contrast-110" />
-                <div className="absolute inset-0 pointer-events-none">
-                  {INDIA_REGIONS.map((reg) => (
-                    <button key={reg.name} onClick={() => handleSelectRegion(reg)} style={{ top: `${Math.max(10, Math.min(88, 100 - ((reg.lat - 8) / (37.5 - 8)) * 100))}%`, left: `${Math.max(10, Math.min(88, ((reg.lon - 68) / (97 - 68)) * 100))}%` }} className="absolute pointer-events-auto -translate-x-1/2 -translate-y-1/2 group">
-                      <span className={`block w-3.5 h-3.5 rounded-full border-2 border-slate-900 transition-all group-hover:scale-150 ${reg.severity === 'CRITICAL' ? 'bg-red-500 animate-ping' : reg.severity === 'WARNING' ? 'bg-orange-500' : 'bg-cyan-400'}`} />
-                      <span className="hidden group-hover:block absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 bg-slate-900/95 border border-cyan-500 text-white font-mono text-[10px] px-2 py-1 rounded whitespace-nowrap shadow-xl">{reg.name} ({reg.capital}) • {reg.riskScore}%</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+                </Polygon>
+              );
+            })}
+
+            {showCapitals && INDIA_REGIONS.map((reg) => (
+              <Marker key={reg.name} position={[reg.lat, reg.lon]} icon={createCapitalIcon(reg.isCountryCapital)} eventHandlers={{ click: () => handleSelectRegion(reg) }}>
+                <Popup>
+                  <div className="p-2 text-xs space-y-1 font-inter">
+                    <h4 className="font-orbitron font-bold text-white text-sm">{reg.capital} {reg.isCountryCapital && '(NATIONAL CAPITAL)'}</h4>
+                    <p className="text-slate-300">Territory: <strong className="text-cyan-400">{reg.name} ({reg.type})</strong></p>
+                    <p className="text-slate-300">Current Hazard: <strong className="text-orange-400">{reg.hazard}</strong></p>
+                    <p className="text-slate-300">MOSDAC Risk Score: <strong className="text-red-400">{reg.riskScore}%</strong></p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {showAssets && assets.map((asset) => (
+              <Marker key={asset.id} position={[asset.lat, asset.lon]} icon={createAssetIcon(asset.currentRiskStatus)}>
+                <Popup>
+                  <div className="p-2 font-inter text-xs space-y-1">
+                    <h4 className="font-orbitron font-bold text-white text-sm">{asset.name}</h4>
+                    <p className="text-slate-400">Category: <strong className="text-slate-200">{asset.category}</strong></p>
+                    <p className="text-slate-400">Region: <strong className="text-slate-200">{asset.region}</strong></p>
+                    <p className="text-slate-400">Hazard Distance: <strong className="text-orange-400">{asset.distanceToHazardKm} km</strong></p>
+                    <div className="mt-2 text-center">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-cyan-300 border border-cyan-500/30">STATUS: {asset.currentRiskStatus}</span>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          {/* Map Legend Overlay */}
           <div className="absolute bottom-4 left-4 z-20 bg-slate-950/90 border border-slate-800 p-3 rounded-2xl backdrop-blur-md font-mono text-[11px] space-y-2 max-w-xs shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-1.5"><span className="font-bold text-cyan-300 text-xs">OFFICIAL MAP LEGEND</span><span className="text-[9px] text-slate-400">Map not to Scale</span></div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-slate-300 text-[10px]">
@@ -321,6 +312,7 @@ export const MapView = () => {
           </div>
         </div>
 
+        {/* Regional Telemetry Side Panel */}
         <div className="lg:col-span-1 space-y-4">
           <AnimatePresence mode="wait">
             {selectedRegion ? (
@@ -364,6 +356,7 @@ export const MapView = () => {
         </div>
       </div>
 
+      {/* Timeline Replay Control Bar */}
       <div className="p-4 rounded-2xl glass-panel border border-slate-800">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
