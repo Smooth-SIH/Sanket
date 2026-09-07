@@ -2,8 +2,8 @@ name: Keep Alive - Render Backend Service
 
 on:
   schedule:
-    # Runs every 10 minutes to prevent Render free tier from sleeping (15 min inactivity timeout)
-    - cron: '*/10 * * * *'
+    # Runs every 7 minutes to prevent Render free tier from sleeping (15 min inactivity timeout)
+    - cron: '*/7 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,17 +11,29 @@ jobs:
     name: Ping Render Backend Health Endpoint
     runs-on: ubuntu-latest
     steps:
-      - name: Send HTTP Ping
+      - name: Send Robust HTTP Ping to Render Backend
         run: |
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
           if [ -z "$TARGET_URL" ]; then
-            TARGET_URL="https://sanket-backend.onrender.com/api/health"
+            TARGET_URL="https://sanket-backend-epo6.onrender.com/api/health"
           fi
           echo "Pinging Render Backend URL: $TARGET_URL"
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$TARGET_URL")
+          
+          # Use -sSL for follow redirects, --max-time 120 for Render cold start, and retries
+          HTTP_STATUS=$(curl -sSL -o /dev/null -w "%{http_code}" \
+            -A "Sanket-KeepAlive-Bot/2.0" \
+            --connect-timeout 45 \
+            --max-time 120 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            "$TARGET_URL")
+          
           echo "HTTP Response Status Code: $HTTP_STATUS"
           if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
             echo "SUCCESS: Backend service is awake and operational."
           else
             echo "WARNING: Backend service returned HTTP status $HTTP_STATUS"
+            exit 1
           fi
+

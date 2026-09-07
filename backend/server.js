@@ -81,9 +81,23 @@ server.listen(PORT, async () => {
   // Initial Satellite data fetch
   await fetchAndProcessSatelliteData();
 
-  // Schedule 5-Minute MOSDAC INSAT-3D Telemetry Ingestion (300,000 ms)
+  // Schedule 5-Minute MOSDAC INSAT-3D Telemetry Ingestion & Keep-Alive Ping (300,000 ms)
   setInterval(async () => {
-    console.log('[Scheduler] Triggering 5-minute INSAT-3D scan cycle...');
+    console.log('[Scheduler] Triggering 5-minute INSAT-3D scan cycle & keep-alive ping...');
     await fetchAndProcessSatelliteData();
+
+    // Render Keep-Alive Auto-Ping (prevents 15-minute free tier sleep)
+    const backendUrl = process.env.RENDER_BACKEND_URL || 'https://sanket-backend-epo6.onrender.com/api/health';
+    const mlUrl = process.env.RENDER_ML_SERVICE_URL || 'https://sanket-ml-service.onrender.com/health';
+    
+    try {
+      if (typeof fetch !== 'undefined') {
+        fetch(backendUrl).catch(e => console.warn('[KeepAlive] Backend self-ping warning:', e.message));
+        fetch(mlUrl).catch(e => console.warn('[KeepAlive] ML Service self-ping warning:', e.message));
+      }
+    } catch (err) {
+      console.warn('[KeepAlive] Self-ping timer error:', err.message);
+    }
   }, 300000);
 });
+
