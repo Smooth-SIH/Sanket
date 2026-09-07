@@ -87,7 +87,7 @@ export const MapView = () => {
           </div>
           <div>
             <h2 className="font-orbitron font-bold text-base text-white">SANKET GEOSPATIAL HAZARD MAP</h2>
-            <p className="text-xs text-slate-400 font-mono">INSAT-3D 2DSphere Spatial Overlays</p>
+            <p className="text-xs text-cyan-400/80 font-mono">INSAT-3D Spatial Overlays &bull; India Political Tactical Map</p>
           </div>
         </div>
 
@@ -124,11 +124,13 @@ export const MapView = () => {
         >
           <MapResizeHandler />
 
-          {/* High Availability OpenStreetMap Dark Filter Tiles */}
+          {/* High-Definition Dark Tactical Political Map of India */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            className="map-tiles-dark"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
+            subdomains="abcd"
+            maxZoom={19}
+            className="map-tiles-tactical"
           />
 
           {/* Risk Zone Polygons */}
