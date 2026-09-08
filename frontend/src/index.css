@@ -64,6 +64,11 @@
   filter: contrast(1.1) brightness(0.95);
 }
 
+.map-tiles-borders {
+  filter: brightness(2.5) contrast(2) drop-shadow(0 0 2px rgba(0, 212, 255, 0.8));
+  opacity: 0.95;
+}
+
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background: rgba(10, 22, 40, 0.95) !important;
   color: #f8fafc !important;
