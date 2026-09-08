@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Polygon, Polyline, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Play, Pause, RotateCcw, ShieldAlert, Layers } from 'lucide-react';
+import { Play, Pause, RotateCcw, ShieldAlert } from 'lucide-react';
 import { fetchMapRiskZones, fetchAssets, fetchSatelliteTimeline } from '../../services/api';
-import { INDIA_NATIONAL_BORDER, INDIA_STATE_BOUNDARIES } from '../../data/indiaStateBoundaries';
 
 // Leaflet Map Resize Helper Component
 const MapResizeHandler = () => {
@@ -37,7 +36,6 @@ export const MapView = () => {
   // Layer Toggles
   const [showPolygons, setShowPolygons] = useState(true);
   const [showAssets, setShowAssets] = useState(true);
-  const [showStateBorders, setShowStateBorders] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -96,15 +94,6 @@ export const MapView = () => {
         {/* Layer Toggle Buttons */}
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => setShowStateBorders(!showStateBorders)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-colors ${
-              showStateBorders ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold' : 'text-slate-400 hover:bg-slate-800'
-            }`}
-          >
-            State Borders ({INDIA_STATE_BOUNDARIES.length})
-          </button>
-
-          <button
             onClick={() => setShowPolygons(!showPolygons)}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-colors ${
               showPolygons ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold' : 'text-slate-400 hover:bg-slate-800'
@@ -149,44 +138,6 @@ export const MapView = () => {
             maxZoom={16}
             className="map-tiles-borders"
           />
-
-          {/* High-Definition Vector State & National Boundaries Overlay */}
-          {showStateBorders && (
-            <>
-              {/* National Border Line */}
-              <Polyline
-                positions={INDIA_NATIONAL_BORDER}
-                pathOptions={{
-                  color: '#38bdf8',
-                  weight: 2.8,
-                  opacity: 0.95,
-                  dashArray: '6, 3'
-                }}
-              />
-
-              {/* State & UT Boundaries */}
-              {INDIA_STATE_BOUNDARIES.map((state) => (
-                <Polygon
-                  key={state.id}
-                  positions={state.coordinates}
-                  pathOptions={{
-                    color: '#00e5ff',
-                    weight: 1.5,
-                    opacity: 0.75,
-                    fillColor: '#00e5ff',
-                    fillOpacity: 0.02
-                  }}
-                >
-                  <Popup>
-                    <div className="p-1 font-inter text-xs space-y-1">
-                      <span className="font-orbitron font-bold text-cyan-400 text-xs">POLITICAL BOUNDARY</span>
-                      <p className="text-white font-semibold">{state.name}</p>
-                    </div>
-                  </Popup>
-                </Polygon>
-              ))}
-            </>
-          )}
 
           {/* Risk Zone Polygons */}
           {showPolygons && riskZones.map((feature) => {
