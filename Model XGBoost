@@ -1,0 +1,221 @@
+Cell 1 — Install XGBoost
+!pip install xgboost
+Cell 2 — Create sample weather data
+
+This creates the dataset automatically. You don't need to create any CSV file.
+
+import pandas as pd
+import numpy as np
+
+# Create sample weather data
+data = {
+    "temperature": [29.4, 30.1, 28.7, 31.2, 27.9, 30.5, 29.1, 32.0, 28.5, 30.8,
+                     29.7, 31.1, 27.5, 28.9, 30.2, 29.8, 31.5, 27.8, 30.6, 28.3],
+
+    "humidity": [87, 84, 91, 78, 94, 82, 89, 75, 92, 86,
+                 88, 79, 95, 90, 83, 85, 77, 93, 81, 96],
+
+    "dew_point": [26.2, 26.0, 27.0, 24.5, 26.8, 25.5, 26.5, 23.5, 27.1, 26.3,
+                  26.0, 25.0, 27.2, 26.8, 25.7, 26.1, 24.0, 27.0, 25.2, 27.5],
+
+    "pressure": [998, 997, 999, 1001, 996, 999, 998, 1002, 997, 999,
+                 998, 1000, 995, 997, 999, 998, 1001, 996, 1000, 994],
+
+    "wind_speed": [5.2, 7.1, 4.5, 8.2, 6.8, 5.5, 7.8, 4.2, 6.5, 8.0,
+                   5.9, 7.5, 9.1, 6.2, 5.0, 7.0, 8.5, 5.7, 6.9, 9.5],
+
+    "wind_direction": [240, 250, 220, 270, 230, 245, 210, 280, 235, 260,
+                       225, 250, 215, 240, 230, 255, 270, 220, 245, 210],
+
+    "rainfall_10min": [2.1, 3.2, 1.5, 0.5, 4.2, 1.2, 2.8, 0.2, 3.5, 2.5,
+                       1.8, 0.7, 5.1, 3.8, 1.0, 2.4, 0.4, 4.5, 1.6, 5.5],
+
+    "rainfall_1hr": [8.4, 12.2, 6.5, 2.1, 18.5, 5.2, 10.4, 1.5, 15.2, 9.8,
+                     7.4, 3.2, 22.5, 16.8, 4.5, 11.2, 2.0, 19.4, 6.8, 25.1],
+
+    "rainfall_3hr": [18.2, 25.4, 12.3, 5.2, 35.6, 10.5, 22.1, 3.5, 30.2, 20.4,
+                     15.8, 8.1, 42.5, 32.8, 9.4, 23.5, 4.2, 38.6, 14.2, 48.1],
+
+    "rainfall_24hr": [72.5, 85.2, 45.3, 20.1, 110.4, 38.5, 65.2, 15.2, 95.4, 70.1,
+                      55.2, 28.4, 125.6, 105.2, 32.1, 78.5, 18.5, 115.4, 48.2, 135.8],
+
+    "cape": [1850, 2100, 1200, 800, 2300, 1400, 1900, 600, 2200, 1750,
+             1600, 950, 2500, 2150, 1100, 1800, 700, 2400, 1300, 2700],
+
+    "cin": [35, 28, 60, 80, 20, 50, 32, 100, 25, 40,
+            45, 75, 15, 22, 65, 30, 90, 18, 55, 10],
+
+    "lifted_index": [-4.2, -5.1, -2.1, -0.5, -6.0, -3.0, -4.5, 0.5, -5.5, -3.8,
+                     -3.5, -1.0, -6.5, -5.2, -2.0, -4.0, 0.2, -6.2, -2.8, -7.0],
+
+    "k_index": [36, 39, 30, 25, 42, 34, 37, 22, 40, 35,
+                33, 27, 44, 41, 29, 36, 24, 43, 31, 46],
+
+    "wind_shear": [18, 21, 12, 8, 25, 15, 19, 6, 23, 17,
+                   16, 10, 27, 24, 11, 18, 7, 26, 13, 29],
+
+    "wind_convergence": [0.004, 0.005, 0.002, 0.001, 0.006,
+                         0.003, 0.004, 0.001, 0.005, 0.004,
+                         0.003, 0.002, 0.007, 0.006, 0.002,
+                         0.004, 0.001, 0.006, 0.003, 0.008],
+
+    "iwv": [52, 55, 45, 38, 60, 48, 53, 35, 58, 51,
+            49, 42, 63, 59, 44, 52, 37, 61, 47, 65],
+
+    "cloud_cover": [82, 90, 70, 45, 95, 75, 85, 40, 92, 80,
+                    78, 55, 98, 94, 65, 88, 50, 96, 72, 99],
+
+    "cloud_top_temperature": [-58, -61, -52, -40, -65, -55, -59, -35, -63, -57,
+                              -54, -45, -68, -64, -50, -60, -42, -67, -53, -70],
+
+    "elevation": [12] * 20,
+    "slope": [3.2] * 20,
+    "soil_moisture": [0.31, 0.32, 0.25, 0.20, 0.38,
+                      0.28, 0.33, 0.18, 0.36, 0.30,
+                      0.29, 0.22, 0.40, 0.37, 0.24,
+                      0.34, 0.19, 0.39, 0.27, 0.42],
+
+    "latitude": [19.076] * 20,
+    "longitude": [72.877] * 20,
+
+    # Target
+    "severe_weather": [1, 1, 0, 0, 1,
+                       0, 1, 0, 1, 1,
+                       0, 0, 1, 1, 0,
+                       1, 0, 1, 0, 1]
+}
+
+df = pd.DataFrame(data)
+
+print("Dataset created successfully!")
+print("Number of rows:", len(df))
+print("Number of columns:", len(df.columns))
+Cell 3 — Look at your dataset
+df.head()
+
+You'll now see the weather table directly inside Google Colab.
+
+You can also check all the columns:
+
+print(df.columns.tolist())
+Cell 4 — Train XGBoost
+from xgboost import XGBClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+
+# All inputs
+features = [
+    "temperature",
+    "humidity",
+    "dew_point",
+    "pressure",
+    "wind_speed",
+    "wind_direction",
+    "rainfall_10min",
+    "rainfall_1hr",
+    "rainfall_3hr",
+    "rainfall_24hr",
+    "cape",
+    "cin",
+    "lifted_index",
+    "k_index",
+    "wind_shear",
+    "wind_convergence",
+    "iwv",
+    "cloud_cover",
+    "cloud_top_temperature",
+    "elevation",
+    "slope",
+    "soil_moisture",
+    "latitude",
+    "longitude"
+]
+
+# X = inputs
+X = df[features]
+
+# y = answer the model should learn
+y = df["severe_weather"]
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# Create XGBoost model
+model = XGBClassifier(
+    n_estimators=100,
+    max_depth=4,
+    learning_rate=0.05,
+    random_state=42,
+    eval_metric="logloss"
+)
+
+# Train
+model.fit(X_train, y_train)
+
+# Test
+y_pred = model.predict(X_test)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+Cell 5 — Give weather values to your model
+
+Now you can actually test it.
+
+# Example current weather conditions
+
+live_weather = pd.DataFrame([{
+    "temperature": 30,
+    "humidity": 90,
+    "dew_point": 27,
+    "pressure": 996,
+    "wind_speed": 8,
+    "wind_direction": 240,
+
+    "rainfall_10min": 4,
+    "rainfall_1hr": 18,
+    "rainfall_3hr": 35,
+    "rainfall_24hr": 100,
+
+    "cape": 2200,
+    "cin": 20,
+    "lifted_index": -5,
+    "k_index": 40,
+
+    "wind_shear": 22,
+    "wind_convergence": 0.005,
+
+    "iwv": 58,
+    "cloud_cover": 95,
+    "cloud_top_temperature": -63,
+
+    "elevation": 12,
+    "slope": 3.2,
+    "soil_moisture": 0.35,
+
+    "latitude": 19.076,
+    "longitude": 72.877
+}])
+
+# Make sure inputs are in the same order
+live_weather = live_weather[features]
+
+# Prediction
+prediction = model.predict(live_weather)[0]
+
+# Probability
+probability = model.predict_proba(live_weather)[0][1]
+
+if prediction == 1:
+    print("🚨 SEVERE WEATHER POSSIBLE")
+else:
+    print("✅ LOW SEVERE WEATHER RISK")
+
+print("Probability:", round(probability * 100, 2), "%")
