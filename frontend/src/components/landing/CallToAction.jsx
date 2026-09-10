@@ -1,43 +1,43 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { setCurrentView } from '../../store/slices/authSlice';
-import { ArrowRight, ShieldAlert, Radio } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Map } from 'lucide-react';
 
 export const CallToAction = () => {
   const dispatch = useDispatch();
 
   return (
-    <section className="py-20 relative overflow-hidden">
-      <div className="max-w-5xl mx-auto px-4 lg:px-8 text-center relative z-10">
+    <section className="py-16 bg-white border-b border-slate-200">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
-        <div className="p-12 rounded-3xl glass-panel border border-cyan-500/40 shadow-glow-cyan">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center mx-auto mb-6">
-            <ShieldAlert className="w-8 h-8 text-cyan-400" />
+        <div className="p-8 sm:p-12 rounded-lg bg-slate-50 border border-slate-200 shadow-sm">
+          <div className="w-12 h-12 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center mx-auto mb-4">
+            <ShieldCheck className="w-6 h-6" />
           </div>
 
-          <h2 className="font-orbitron text-3xl sm:text-4xl font-black text-white tracking-tight">
-            READY TO ACCESS SANKET COMMAND CENTER?
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Access the National Nowcasting Operations Console
           </h2>
 
-          <p className="mt-4 text-slate-300 text-base max-w-2xl mx-auto font-light">
-            Monitor real-time INSAT-3D sounder telemetry, view live risk maps, and track critical infrastructure vulnerability in real-time.
+          <p className="mt-3 text-slate-600 text-sm max-w-2xl mx-auto leading-relaxed">
+            Monitor live geostationary satellite telemetry, analyze multi-hazard convective risk scores, and track infrastructure vulnerability in real-time.
           </p>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button
               onClick={() => dispatch(setCurrentView('dashboard'))}
-              className="inline-flex items-center space-x-3 px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold font-orbitron text-sm tracking-wider hover:from-cyan-400 hover:to-blue-500 transition-all duration-300 shadow-glow-cyan"
+              className="inline-flex items-center space-x-2 px-6 py-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm shadow-sm transition-colors"
             >
-              <span>LAUNCH LIVE DASHBOARD</span>
-              <ArrowRight className="w-5 h-5" />
+              <span>Launch Operations Console</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => dispatch(setCurrentView('map'))}
-              className="inline-flex items-center space-x-2 px-6 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-sm font-medium border border-slate-700 transition-colors"
+              className="inline-flex items-center space-x-2 px-5 py-3 rounded-md bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm border border-slate-300 shadow-sm transition-colors"
             >
-              <Radio className="w-4 h-4 text-cyan-400" />
-              <span>OPEN GEOSPATIAL MAP</span>
+              <Map className="w-4 h-4 text-slate-500" />
+              <span>Open Geospatial Radar</span>
             </button>
           </div>
         </div>

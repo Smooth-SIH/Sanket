@@ -1,108 +1,80 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
 import { setCurrentView } from '../../store/slices/authSlice';
-import { Radio, ArrowRight, Layers } from 'lucide-react';
+import { Radio, ArrowRight, Layers, ShieldCheck, MapPin, AlertCircle } from 'lucide-react';
 
 export const HeroSection = () => {
   const dispatch = useDispatch();
 
   return (
-    <section className="relative pt-12 pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 relative z-10">
+    <section className="bg-white border-b border-slate-200 py-12 lg:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Top Tagline Pill */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center space-x-2.5 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono mb-8 shadow-glow-cyan"
-        >
-          <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
-          <span>INSAT-3D / 3DR Live MOSDAC Data Integration</span>
-        </motion.div>
+        {/* Official Tagline Pill */}
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold mb-6">
+          <Radio className="w-3.5 h-3.5 text-blue-700 animate-pulse" />
+          <span>INSAT-3D / 3DR Sounder Telemetry & IMD Radar Telemetry Stream</span>
+        </div>
 
-        {/* Hero Title & Description */}
+        {/* Hero Title & Government Mission Statement */}
         <div className="max-w-4xl">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="font-orbitron text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight"
-          >
-            HYPER-LOCAL SEVERE <br />
-            <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-orange-400 bg-clip-text text-transparent glow-text-cyan">
-              WEATHER NOWCASTING
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
+            National Severe Weather <br />
+            <span className="text-blue-700">
+              Nowcasting & Early Warning
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="mt-6 text-slate-300 text-lg sm:text-xl font-light leading-relaxed max-w-3xl"
-          >
-            <strong className="text-cyan-300 font-semibold">SANKET</strong> leverages real-time 
-            INSAT-3D sounder telemetry, XGBoost machine learning, and SHAP explainability to predict 
-            cloudbursts, flash floods, and severe convective storms with lead times up to 45 minutes.
-          </motion.p>
+          <p className="mt-5 text-slate-600 text-base sm:text-lg leading-relaxed max-w-3xl">
+            <strong>SANKET</strong> is India's hyper-local atmospheric nowcasting platform developed under the Ministry of Earth Sciences and ISRO MOSDAC. Utilizing geostationary sounder telemetry and physics-guided XGBoost machine learning, SANKET provides early warnings for cloudbursts, flash floods, and severe convective storms with up to 45 minutes of lead time.
+          </p>
 
           {/* Action CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="mt-10 flex flex-wrap gap-4 items-center"
-          >
+          <div className="mt-8 flex flex-wrap gap-3 items-center">
             <button
               onClick={() => dispatch(setCurrentView('dashboard'))}
-              className="group relative inline-flex items-center space-x-3 px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold font-orbitron text-sm tracking-wider hover:from-cyan-400 hover:to-blue-500 transition-all duration-300 shadow-glow-cyan"
+              className="inline-flex items-center space-x-2 px-6 py-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm shadow-sm transition-colors"
             >
-              <span>ENTER LIVE OPS CENTER</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <span>Launch Operations Console</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => dispatch(setCurrentView('map'))}
-              className="inline-flex items-center space-x-2.5 px-7 py-4 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 font-medium text-sm border border-slate-700 hover:border-cyan-500/50 transition-all duration-300"
+              className="inline-flex items-center space-x-2 px-5 py-3 rounded-md bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm border border-slate-300 shadow-sm transition-colors"
             >
-              <Layers className="w-4 h-4 text-cyan-400" />
-              <span>EXPLORE GEOSPATIAL MAP</span>
+              <Layers className="w-4 h-4 text-slate-500" />
+              <span>Geospatial Radar & Map</span>
             </button>
-          </motion.div>
+          </div>
         </div>
 
-        {/* Live Metrics Floating Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl glass-panel border border-cyan-500/20"
-        >
-          <div className="border-r border-slate-800/80 pr-4">
-            <p className="text-xs text-slate-400 font-mono">IWV (VAPOR DENSITY)</p>
-            <p className="font-orbitron text-2xl font-bold text-cyan-400 mt-1">64.2 mm</p>
-            <span className="text-[10px] text-emerald-400 font-mono">↑ 14% Convective Surge</span>
+        {/* National Operational Metrics Grid */}
+        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 p-5 rounded-lg bg-slate-50 border border-slate-200">
+          <div className="border-r border-slate-200 pr-4">
+            <p className="text-xs text-slate-500 font-medium">COLUMN MOISTURE (IWV)</p>
+            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">58.4 mm</p>
+            <span className="text-[11px] text-blue-700 font-medium">Sounder Ingestion</span>
           </div>
 
-          <div className="border-r border-slate-800/80 pr-4">
-            <p className="text-xs text-slate-400 font-mono">CLOUD TOP TEMP (CTT)</p>
-            <p className="font-orbitron text-2xl font-bold text-sky-300 mt-1">204.1 K</p>
-            <span className="text-[10px] text-red-400 font-mono">Deep Convective Overshoot</span>
+          <div className="border-r border-slate-200 pr-4">
+            <p className="text-xs text-slate-500 font-medium">CLOUD TOP TEMP (CTT)</p>
+            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">210.5 K</p>
+            <span className="text-[11px] text-slate-600 font-medium">Thermal IR Band 19</span>
           </div>
 
-          <div className="border-r border-slate-800/80 pr-4">
-            <p className="text-xs text-slate-400 font-mono">CAPE ATMOSPHERIC ENERGY</p>
-            <p className="font-orbitron text-2xl font-bold text-orange-400 mt-1">3,840 J/kg</p>
-            <span className="text-[10px] text-orange-400 font-mono">Extreme Instability</span>
+          <div className="border-r border-slate-200 pr-4">
+            <p className="text-xs text-slate-500 font-medium">CONVECTIVE ENERGY (CAPE)</p>
+            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">2,450 J/kg</p>
+            <span className="text-[11px] text-amber-700 font-medium">Atmospheric Instability</span>
           </div>
 
           <div>
-            <p className="text-xs text-slate-400 font-mono">EARLY WARNING LEAD TIME</p>
-            <p className="font-orbitron text-2xl font-bold text-emerald-400 mt-1">35 MINS</p>
-            <span className="text-[10px] text-slate-400 font-mono">Before Touchdown</span>
+            <p className="text-xs text-slate-500 font-medium">DISASTER LEAD TIME</p>
+            <p className="text-2xl font-bold text-emerald-700 tabular-nums mt-1">Up to 45 Mins</p>
+            <span className="text-[11px] text-slate-600 font-medium">Prior to Touchdown</span>
           </div>
-        </motion.div>
+        </div>
 
       </div>
     </section>

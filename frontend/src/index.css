@@ -4,90 +4,113 @@
 
 @layer base {
   body {
-    background-color: #050c17;
-    color: #f1f5f9;
-    font-family: 'Inter', sans-serif;
-  }
-  
-  h1, h2, h3, .font-orbitron {
-    font-family: 'Orbitron', sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 }
 
-/* Glassmorphism Design System */
+/* Minimalist Modern Government Design System */
+.gov-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.gov-card-interactive {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease-in-out;
+}
+.gov-card-interactive:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+/* Backward-compatible alias for existing glass-panel classes */
 .glass-panel {
-  background: rgba(10, 22, 40, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 212, 255, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
 }
 
 .glass-panel-danger {
-  background: rgba(25, 10, 15, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  box-shadow: 0 8px 32px 0 rgba(239, 68, 68, 0.2);
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: 0 1px 3px 0 rgba(185, 28, 28, 0.08) !important;
+  color: #991b1b !important;
 }
 
 .glass-nav {
-  background: rgba(5, 12, 23, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 212, 255, 0.12);
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
 }
 
-/* Glow & Shimmer Effects */
-.glow-text-cyan {
-  text-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+/* Clean High-Contrast IMD Alert Badges */
+.badge-imd-critical {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
-.glow-text-orange {
-  text-shadow: 0 0 12px rgba(255, 107, 53, 0.6);
+.badge-imd-warning {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
 }
 
-.glow-box-cyan {
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
+.badge-imd-watch {
+  background-color: #fefce8;
+  color: #b45309;
+  border: 1px solid #fef08a;
 }
 
-/* Leaflet Dark Theme Overlays & Robust Container */
+.badge-imd-normal {
+  background-color: #f0fdf4;
+  color: #15803D;
+  border: 1px solid #bbf7d0;
+}
+
+/* Leaflet Clean Institutional Map Styling */
 .leaflet-container {
-  height: 650px !important;
-  min-height: 550px !important;
+  height: 600px !important;
+  min-height: 500px !important;
   width: 100% !important;
-  background: #050c17 !important;
-  font-family: 'Inter', sans-serif;
-  border-radius: 1.5rem;
+  background: #f1f5f9 !important;
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid #cbd5e1 !important;
   z-index: 1;
 }
 
-.map-tiles-tactical {
-  filter: contrast(1.1) brightness(0.95);
-}
-
-.map-tiles-borders {
-  filter: brightness(2.5) contrast(2) drop-shadow(0 0 2px rgba(0, 212, 255, 0.8));
-  opacity: 0.95;
-}
-
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: rgba(10, 22, 40, 0.95) !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  backdrop-filter: blur(12px);
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.375rem !important;
 }
 
-/* Custom Scrollbar */
+/* Modern Accessible Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #050c17;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00d4ff;
+  background: #94a3b8;
 }

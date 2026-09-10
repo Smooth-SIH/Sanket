@@ -12,6 +12,7 @@ from typing import Dict, Any, List
 from pathlib import Path
 from dotenv import load_dotenv
 import httpx
+import numpy as np
 
 # Load environment variables from ml-service/.env or root .env
 env_path = Path(__file__).resolve().parent / ".env"
@@ -106,22 +107,64 @@ class MOSDACInsatFetcher:
             ctt = surface_temp_k - 15.0
         return round(max(190.0, min(285.0, ctt)), 1)
 
+    def _generate_mock_fallback(self, lat: float, lon: float) -> Dict[str, Any]:
+        """
+        Generates realistic physically-consistent mock atmospheric parameters
+        when live internet / API connection is unavailable.
+        """
+        now = datetime.datetime.utcnow()
+        time_hash = int(now.timestamp()) // 300
+        # Deterministic pseudo-random seed based on time and coordinates
+        coord_seed = int(abs(lat * 100) + abs(lon * 100) + time_hash) % 10000
+        np.random.seed(coord_seed)
+
+        is_convective = (coord_seed % 3 == 0)
+        temp_c = round(float(np.random.uniform(18.0, 32.0)), 1)
+        humidity = round(float(np.random.uniform(70.0, 95.0) if is_convective else np.random.uniform(45.0, 75.0)), 1)
+        cape = round(float(np.random.uniform(2200.0, 3900.0) if is_convective else np.random.uniform(300.0, 1400.0)), 1)
+        cin = round(float(np.random.uniform(5.0, 35.0) if is_convective else np.random.uniform(60.0, 180.0)), 1)
+        rain_rate = round(float(np.random.uniform(35.0, 110.0) if is_convective else np.random.uniform(0.0, 10.0)), 2)
+        wind_kmh = round(float(np.random.uniform(45.0, 85.0) if is_convective else np.random.uniform(10.0, 30.0)), 1)
+        iwv = round(float(np.random.uniform(52.0, 68.0) if is_convective else np.random.uniform(25.0, 46.0)), 1)
+        ctt = round(float(np.random.uniform(198.0, 218.0) if is_convective else np.random.uniform(240.0, 275.0)), 1)
+        lifted_idx = round(float(-5.5 if is_convective else -1.0), 2)
+        k_index = round(float(38.0 if is_convective else 24.0), 1)
+
+        return {
+            "IWV_mm": iwv,
+            "CTT_K": ctt,
+            "CTT_Celsius": round(ctt - 273.15, 1),
+            "CAPE_Jkg": cape,
+            "CIN_Jkg": cin,
+            "rain_rate_mmh": rain_rate,
+            "wind_speed_kmh": wind_kmh,
+            "humidity_pct": humidity,
+            "lifted_index": lifted_idx,
+            "k_index": k_index,
+            "surface_temp_c": temp_c,
+            "cloud_cover_pct": round(float(np.random.uniform(75.0, 98.0) if is_convective else np.random.uniform(20.0, 60.0)), 1),
+            "is_fallback": True
+        }
+
     def fetch_live_point_data(self, lat: float, lon: float) -> Dict[str, Any]:
         """
         Fetch real-time atmospheric measurements for a specific coordinate by combining
         OpenWeatherMap surface telemetry with Open-Meteo atmospheric soundings.
+        Automatically falls back to simulated telemetry if offline or APIs fail.
         """
         weather_data = {}
         sounding_data = {}
+        has_live_data = False
 
         # 1. Fetch live surface telemetry from OpenWeatherMap (if API key is active)
         if self.weather_api_key and self.weather_api_key != "your_openweathermap_api_key_here":
             try:
                 owm_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={self.weather_api_key}&units=metric"
-                with httpx.Client(timeout=4.0) as client:
+                with httpx.Client(timeout=3.0) as client:
                     resp = client.get(owm_url)
                     if resp.status_code == 200:
                         weather_data = resp.json()
+                        has_live_data = True
             except Exception as e:
                 logger.warning(f"[Live Fetcher] OpenWeatherMap request failed for ({lat}, {lon}): {e}")
 
@@ -133,12 +176,18 @@ class MOSDACInsatFetcher:
                 f"&current=temperature_2m,relative_humidity_2m,precipitation,rain,surface_pressure,wind_speed_10m,cloud_cover"
                 f"&timezone=auto"
             )
-            with httpx.Client(timeout=4.0) as client:
+            with httpx.Client(timeout=3.0) as client:
                 resp = client.get(om_url)
                 if resp.status_code == 200:
                     sounding_data = resp.json()
+                    has_live_data = True
         except Exception as e:
             logger.warning(f"[Live Fetcher] Open-Meteo sounding request failed for ({lat}, {lon}): {e}")
+
+        # If both APIs failed, fall back to mock data
+        if not has_live_data:
+            logger.info(f"[Live Fetcher] Live API unavailable for ({lat}, {lon}) - falling back to simulated mock data")
+            return self._generate_mock_fallback(lat, lon)
 
         # Extract and harmonize values
         cur_om = sounding_data.get("current", {})
@@ -249,13 +298,17 @@ class MOSDACInsatFetcher:
                 "k_index": 34.0
             }
 
+        is_fallback_mode = any(h.get("is_fallback", False) for h in regional_hotspots) or primary_metrics.get("is_fallback", False)
+        data_source = "SIMULATED_MOCK_FALLBACK" if is_fallback_mode else "LIVE_OPENWEATHER_AND_ATMOSPHERIC_SOUNDINGS"
+
         return {
             "scan_id": scan_id,
             "timestamp": now.isoformat() + "Z",
             "satellite": self.satellite_id,
             "sensor": self.sensor_type,
             "status": "ONLINE",
-            "data_source": "LIVE_OPENWEATHER_AND_ATMOSPHERIC_SOUNDINGS",
+            "data_source": data_source,
+            "is_fallback": is_fallback_mode,
             "mosdac_adapter_status": "READY" if self.mosdac_adapter.is_configured else "UNCONFIGURED",
             "summary_metrics": {
                 "IWV_mm": primary_metrics["IWV_mm"],

@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
   Radio, 
   Cpu, 
@@ -15,97 +14,90 @@ export const FeaturesGrid = () => {
   const features = [
     {
       icon: Radio,
-      title: 'INSAT-3D/3DR Live Stream',
-      description: 'Ingests ISRO MOSDAC sounder and imager channels every 5 minutes extracting IWV, CTT, and CAPE indices.',
-      color: 'text-cyan-400',
-      border: 'hover:border-cyan-500/50'
+      title: 'INSAT-3D/3DR Telemetry',
+      description: 'Automated 5-minute ingestion from ISRO MOSDAC sounder channels deriving IWV, CTT, and CAPE atmospheric indices.',
+      iconBg: 'bg-blue-50 text-blue-700'
     },
     {
       icon: Cpu,
-      title: 'XGBoost Nowcasting Engine',
-      description: 'Predicts micro-scale atmospheric convective cloudbursts, severe hail, and flash floods with 94.8% accuracy.',
-      color: 'text-sky-400',
-      border: 'hover:border-sky-500/50'
+      title: 'Machine Learning Nowcasting',
+      description: 'Trained XGBoost models classify micro-scale cloudbursts, severe thunderstorms, and flash floods with verified precision.',
+      iconBg: 'bg-indigo-50 text-indigo-700'
     },
     {
       icon: Activity,
       title: 'SHAP Explainable AI',
-      description: 'Provides transparent feature attribution waterfall charts explaining why the model raised a critical warning.',
-      color: 'text-orange-400',
-      border: 'hover:border-orange-500/50'
+      description: 'Provides transparent feature attribution charts showing exact meteorological drivers behind each issued alert.',
+      iconBg: 'bg-emerald-50 text-emerald-700'
     },
     {
       icon: MapPin,
-      title: 'Geospatial Hazard Zones',
-      description: 'Generates GeoJSON risk polygons in MongoDB using 2DSphere spatial indices for precise region boundaries.',
-      color: 'text-emerald-400',
-      border: 'hover:border-emerald-500/50'
+      title: 'Geospatial Hazard Sectors',
+      description: 'Renders GeoJSON risk polygons with MongoDB 2DSphere spatial indices for precise river basin and valley mapping.',
+      iconBg: 'bg-amber-50 text-amber-700'
     },
     {
       icon: ShieldCheck,
-      title: 'Infrastructure Protection',
-      description: 'Tracks power grids, hydro dams, bridges, and hospitals with automated hazard distance risk scoring.',
-      color: 'text-purple-400',
-      border: 'hover:border-purple-500/50'
+      title: 'Critical Asset Safeguards',
+      description: 'Automated proximity distance risk scoring for power grids, hydro dams, bridges, and district hospitals.',
+      iconBg: 'bg-purple-50 text-purple-700'
     },
     {
       icon: Zap,
-      title: 'Real-Time WebSocket Engine',
-      description: 'Broadcasts instant telemetry and emergency alerts directly to command center consoles with sub-second latency.',
-      color: 'text-yellow-400',
-      border: 'hover:border-yellow-500/50'
+      title: 'Sub-Second WebSocket Alerts',
+      description: 'Broadcasts instant telemetry updates and emergency warnings directly to emergency operating centers.',
+      iconBg: 'bg-red-50 text-red-700'
     },
     {
       icon: Clock,
-      title: '24-Hour Timeline Replay',
-      description: 'Scrub backwards in time to analyze atmospheric vapor accumulation and storm trajectory before touchdown.',
-      color: 'text-cyan-300',
-      border: 'hover:border-cyan-400/50'
+      title: 'Atmospheric Trajectory Replay',
+      description: 'Interactive timeline scrubber to analyze atmospheric vapor build-up and convective growth leading up to storm onset.',
+      iconBg: 'bg-teal-50 text-teal-700'
     },
     {
       icon: BellRing,
-      title: 'Officer Acknowledgment',
+      title: 'Statutory Acknowledgment',
       description: 'Multi-officer alert acknowledgment tracking with audit logging for emergency command cells.',
-      color: 'text-red-400',
-      border: 'hover:border-red-500/50'
+      iconBg: 'bg-slate-100 text-slate-700'
     }
   ];
 
   return (
-    <section className="py-20 bg-slate-950/60 relative">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8">
+    <section className="py-16 bg-slate-50 border-b border-slate-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="font-orbitron text-3xl sm:text-4xl font-bold text-white tracking-tight">
-            SYSTEM CAPABILITIES & ARCHITECTURE
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
+            System Capabilities
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-3">
+            National Meteorological Warning Infrastructure
           </h2>
-          <p className="mt-4 text-slate-400 text-base font-light">
-            Designed for disaster management authorities, weather forecasting stations, and smart cities.
+          <p className="mt-2 text-slate-600 text-sm">
+            Engineered for disaster management authorities (NDMA/SDMA), weather stations, and district emergency cells.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <motion.div
+              <div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.08 }}
-                className={`p-6 rounded-2xl glass-panel transition-all duration-300 ${item.border} group hover:-translate-y-1`}
+                className="p-5 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow transition-all duration-150 flex flex-col justify-between"
               >
-                <div className={`w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-5 ${item.color} group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-6 h-6" />
+                <div>
+                  <div className={`w-10 h-10 rounded-lg ${item.iconBg} flex items-center justify-center mb-4`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-slate-600 text-xs leading-relaxed">
+                    {item.description}
+                  </p>
                 </div>
-                <h3 className="font-orbitron font-bold text-lg text-white mb-2 group-hover:text-cyan-300 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-slate-400 text-sm leading-relaxed font-light">
-                  {item.description}
-                </p>
-              </motion.div>
+              </div>
             );
           })}
         </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Boxes, Plus, ShieldCheck, AlertOctagon, MapPin, Zap, Radio } from 'lucide-react';
+import { Boxes, Plus, ShieldCheck, AlertOctagon, MapPin, Zap, Radio, Building2 } from 'lucide-react';
 import { fetchAssets } from '../../services/api';
 import { setAssets } from '../../store/slices/assetSlice';
 
@@ -53,38 +53,42 @@ export const AssetManagementView = () => {
     : assets.filter(a => a.category === selectedCategory);
 
   return (
-    <div className="min-h-screen py-8 px-4 lg:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="p-5 rounded-lg bg-white border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-orbitron font-extrabold text-2xl lg:text-3xl text-white">
-            CRITICAL ASSET MANAGEMENT
-          </h1>
-          <p className="text-slate-400 text-xs font-mono mt-1">
-            Proximity Hazard Tracking for High-Value Infrastructure & Relief Sites
+          <div className="flex items-center space-x-2">
+            <Building2 className="w-5 h-5 text-blue-800" />
+            <h1 className="font-bold text-xl text-slate-900">
+              National Critical Infrastructure Registry & Vulnerability Tracker
+            </h1>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Real-time Geospatial Proximity Assessment for Hydroelectric Dams, Power Grids, and Disaster Relief Camps
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-orbitron font-bold text-xs hover:from-cyan-400 hover:to-blue-500 transition-all shadow-glow-cyan"
+          className="flex items-center space-x-2 px-4 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
-          <span>REGISTER NEW ASSET</span>
+          <span>Register New Critical Asset</span>
         </button>
       </div>
 
       {/* Category Filters */}
-      <div className="p-4 rounded-2xl glass-panel border border-slate-800 flex items-center space-x-2 overflow-x-auto">
+      <div className="p-3.5 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center space-x-2 overflow-x-auto">
+        <span className="text-xs text-slate-500 font-medium whitespace-nowrap pl-1">Filter by Category:</span>
         {['ALL', 'HYDRO_DAM', 'POWER_GRID', 'TELECOM_TOWER', 'BRIDGE', 'HOSPITAL', 'RELIEF_CAMP'].map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-colors ${
+            className={`px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors ${
               selectedCategory === cat
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
-                : 'text-slate-400 hover:bg-slate-800'
+                ? 'bg-blue-50 text-blue-800 border border-blue-200 font-semibold'
+                : 'text-slate-600 border border-transparent hover:bg-slate-50'
             }`}
           >
             {cat.replace('_', ' ')}
@@ -93,48 +97,48 @@ export const AssetManagementView = () => {
       </div>
 
       {/* Assets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredAssets.map((asset) => (
           <div
             key={asset.id}
-            className={`p-6 rounded-2xl glass-panel border flex flex-col justify-between transition-all ${
+            className={`p-5 rounded-lg bg-white border flex flex-col justify-between transition-all shadow-sm ${
               asset.currentRiskStatus === 'EVACUATION_REQUIRED'
-                ? 'border-red-500/50 shadow-glow-red'
+                ? 'border-red-400 ring-1 ring-red-300'
                 : asset.currentRiskStatus === 'HIGH_DANGER'
-                ? 'border-orange-500/50'
-                : 'border-slate-800'
+                ? 'border-amber-400'
+                : 'border-slate-200'
             }`}
           >
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/20 uppercase">
-                  {asset.category}
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+                  {asset.category.replace('_', ' ')}
                 </span>
 
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase ${
-                  asset.currentRiskStatus === 'EVACUATION_REQUIRED' ? 'bg-red-600 text-white animate-pulse' :
-                  asset.currentRiskStatus === 'HIGH_DANGER' ? 'bg-orange-600 text-white' :
-                  asset.currentRiskStatus === 'MODERATE' ? 'bg-yellow-600 text-black' : 'bg-emerald-600 text-white'
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                  asset.currentRiskStatus === 'EVACUATION_REQUIRED' ? 'bg-red-600 text-white' :
+                  asset.currentRiskStatus === 'HIGH_DANGER' ? 'bg-amber-600 text-white' :
+                  asset.currentRiskStatus === 'MODERATE' ? 'bg-yellow-400 text-slate-900' : 'bg-emerald-600 text-white'
                 }`}>
-                  {asset.currentRiskStatus}
+                  {asset.currentRiskStatus.replace('_', ' ')}
                 </span>
               </div>
 
-              <h3 className="font-orbitron font-bold text-base text-white mb-2">
+              <h3 className="font-bold text-base text-slate-900 mb-2">
                 {asset.name}
               </h3>
 
-              <div className="space-y-1 text-xs text-slate-400 font-mono">
-                <p>Region: <span className="text-slate-200">{asset.region}</span></p>
-                <p>Coords: <span className="text-slate-200">{asset.lat}° N, {asset.lon}° E</span></p>
-                <p>Elevation: <span className="text-slate-200">{asset.elevationMeters} meters</span></p>
-                <p>Criticality Score: <span className="text-cyan-400 font-bold">{asset.criticalityScore} / 10</span></p>
+              <div className="space-y-1.5 text-xs text-slate-600 font-mono">
+                <p>Jurisdiction: <span className="font-medium text-slate-900 font-sans">{asset.region}</span></p>
+                <p>Coordinates: <span className="text-slate-800">{asset.lat}° N, {asset.lon}° E</span></p>
+                <p>Elevation: <span className="text-slate-800">{asset.elevationMeters} meters ASL</span></p>
+                <p>Vulnerability Index: <span className="text-blue-800 font-bold">{asset.criticalityScore} / 10.0</span></p>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-500">Hazard Distance:</span>
-              <span className="text-orange-400 font-bold">{asset.distanceToHazardKm} km</span>
+            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
+              <span className="text-slate-500 font-sans">Distance to Convective Core:</span>
+              <span className="text-slate-900 font-bold">{asset.distanceToHazardKm} km</span>
             </div>
           </div>
         ))}
@@ -142,30 +146,30 @@ export const AssetManagementView = () => {
 
       {/* Add Asset Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <form onSubmit={handleAddAsset} className="p-6 rounded-3xl glass-panel border border-cyan-500/40 max-w-md w-full space-y-4">
-            <h3 className="font-orbitron font-bold text-lg text-white">
-              REGISTER INFRASTRUCTURE ASSET
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <form onSubmit={handleAddAsset} className="p-6 rounded-lg bg-white border border-slate-300 shadow-xl max-w-md w-full space-y-4">
+            <h3 className="font-bold text-lg text-slate-900">
+              Register New Critical Asset
             </h3>
 
             <div>
-              <label className="text-xs font-mono text-slate-400 block mb-1">Asset Name</label>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Asset Name</label>
               <input
                 type="text"
                 required
                 value={assetName}
                 onChange={(e) => setAssetName(e.target.value)}
                 placeholder="e.g. Alaknanda Substation Grid"
-                className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono outline-none"
+                className="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-mono text-slate-400 block mb-1">Category</label>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Category</label>
               <select
                 value={assetCategory}
                 onChange={(e) => setAssetCategory(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono outline-none"
+                className="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
               >
                 <option value="HYDRO_DAM">HYDRO_DAM</option>
                 <option value="POWER_GRID">POWER_GRID</option>
@@ -178,49 +182,49 @@ export const AssetManagementView = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-mono text-slate-400 block mb-1">Latitude (°N)</label>
+                <label className="text-xs font-medium text-slate-700 block mb-1">Latitude (°N)</label>
                 <input
                   type="text"
                   value={latVal}
                   onChange={(e) => setLatVal(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono outline-none"
+                  className="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-mono text-slate-400 block mb-1">Longitude (°E)</label>
+                <label className="text-xs font-medium text-slate-700 block mb-1">Longitude (°E)</label>
                 <input
                   type="text"
                   value={lonVal}
                   onChange={(e) => setLonVal(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono outline-none"
+                  className="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-mono text-slate-400 block mb-1">Region / Sector</label>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Region / Jurisdiction</label>
               <input
                 type="text"
                 value={regionVal}
                 onChange={(e) => setRegionVal(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono outline-none"
+                className="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
               />
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex justify-end space-x-2 pt-2">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono"
+                className="px-4 py-2 rounded-md border border-slate-200 text-slate-700 text-xs hover:bg-slate-100 font-medium"
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-orbitron font-bold text-xs"
+                className="px-4 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs shadow-sm"
               >
-                SAVE ASSET
+                Save Asset
               </button>
             </div>
           </form>
