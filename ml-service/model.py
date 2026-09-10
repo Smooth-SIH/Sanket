@@ -6,6 +6,7 @@ Calculates risk scores for cloudburst, flash flood, thunderstorm, and hailstorm.
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from pathlib import Path
 
 
 class SanketNowcastModel:
@@ -26,10 +27,18 @@ class SanketNowcastModel:
             'k_index'          # K-Index
         ]
         self.model = None
-        self._initialize_or_train_model()
+        self.model_path = Path(__file__).resolve().parent / "models" / "xgb_nowcast.json"
+        self._initialize_or_load_model()
 
-    def _initialize_or_train_model(self):
-        """Train XGBoost classifier for severe weather nowcasting."""
+    def _initialize_or_load_model(self):
+        """Load trained XGBoost model from disk or train if missing."""
+        if self.model_path.exists():
+            print(f"[Nowcast Model] Loading trained model artifact from {self.model_path}")
+            self.model = xgb.XGBClassifier()
+            self.model.load_model(str(self.model_path))
+            return
+
+        print(f"[Nowcast Model] Model artifact not found at {self.model_path}. Training baseline model...")
         np.random.seed(42)
         n_samples = 2000
 
@@ -71,6 +80,9 @@ class SanketNowcastModel:
             random_state=42
         )
         self.model.fit(features_df, y_labels)
+        self.model_path.parent.mkdir(parents=True, exist_ok=True)
+        self.model.save_model(str(self.model_path))
+        print(f"[Nowcast Model] Saved newly trained model to {self.model_path}")
 
     def predict(self, features_dict: dict) -> dict:
         """
@@ -153,17 +165,17 @@ class SanketNowcastModel:
         primary_hazard = max(hazards, key=hazards.get)
 
         return {
-            'primary_hazard': primary_hazard,
+            'primary_hazard': str(primary_hazard),
             'severity': severity,
             'severity_color': color,
-            'overall_risk_score': round(max_risk * 100, 1),
-            'cloudburst_probability': round(cloudburst_risk * 100, 1),
-            'flash_flood_probability': round(flash_flood_risk * 100, 1),
-            'thunderstorm_probability': round(thunderstorm_risk * 100, 1),
-            'hail_probability': round(hail_risk * 100, 1),
+            'overall_risk_score': float(round(max_risk * 100, 1)),
+            'cloudburst_probability': float(round(cloudburst_risk * 100, 1)),
+            'flash_flood_probability': float(round(flash_flood_risk * 100, 1)),
+            'thunderstorm_probability': float(round(thunderstorm_risk * 100, 1)),
+            'hail_probability': float(round(hail_risk * 100, 1)),
             'recommended_action': action,
-            'estimated_lead_time_mins': lead_time,
-            'features': df_input.iloc[0].to_dict()
+            'estimated_lead_time_mins': int(lead_time),
+            'features': {k: float(v) for k, v in df_input.iloc[0].to_dict().items()}
         }
 
 
