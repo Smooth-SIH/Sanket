@@ -14,44 +14,8 @@ import {
   AlertCircle, 
   CheckCircle2, 
   Loader2,
-  Sparkles,
   ShieldCheck
 } from 'lucide-react';
-
-const PRESET_ACCOUNTS = [
-  {
-    roleLabel: 'MOSDAC Command',
-    name: 'Command Center Officer',
-    email: 'officer@sanket.gov.in',
-    password: 'sanket2026',
-    org: 'MOSDAC Severe Weather Wing (SAC / ISRO)',
-    badge: 'Duty Officer'
-  },
-  {
-    roleLabel: 'IMD Leadership',
-    name: 'Dr. M. Mohapatra',
-    email: 'imd.director@sanket.gov.in',
-    password: 'imd@2026',
-    org: 'India Meteorological Department (IMD HQ)',
-    badge: 'Director General'
-  },
-  {
-    roleLabel: 'NDRF HQ',
-    name: 'NDRF Ops Commander',
-    email: 'ndrf.command@sanket.gov.in',
-    password: 'ndrf@2026',
-    org: 'National Disaster Response Force (NDRF HQ)',
-    badge: 'Operations Commander'
-  },
-  {
-    roleLabel: 'NWFC Analyst',
-    name: 'Senior Nowcasting Analyst',
-    email: 'analyst@sanket.gov.in',
-    password: 'analyst2026',
-    org: 'National Weather Forecasting Centre (NWFC)',
-    badge: 'Meteorologist'
-  }
-];
 
 export const AuthView = () => {
   const dispatch = useDispatch();
@@ -73,13 +37,6 @@ export const AuthView = () => {
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regRole, setRegRole] = useState('DISASTER_OFFICER');
   const [regOrg, setRegOrg] = useState('State Emergency Operations Centre (SEOC)');
-
-  const handleSelectPreset = (account) => {
-    setLoginEmail(account.email);
-    setLoginPassword(account.password);
-    setErrorMessage('');
-    setSuccessMessage(`Selected registered credentials for ${account.name}`);
-  };
 
   const handleLogin = async (e) => {
     e?.preventDefault();
@@ -292,37 +249,6 @@ export const AuthView = () => {
                   </>
                 )}
               </button>
-
-              {/* Pre-Registered Demo Personnel Quick Access */}
-              <div className="mt-6 pt-5 border-t border-slate-100">
-                <div className="flex items-center space-x-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Verified Registered Personnel (One-Click Testing)</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {PRESET_ACCOUNTS.map((acc) => (
-                    <button
-                      key={acc.email}
-                      type="button"
-                      onClick={() => handleSelectPreset(acc)}
-                      className={`text-left p-2.5 rounded-lg border text-xs transition-all ${
-                        loginEmail === acc.email
-                          ? 'border-blue-600 bg-blue-50/50 shadow-xs ring-1 ring-blue-600'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900 text-xs">{acc.name}</span>
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-700">
-                          {acc.badge}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">{acc.org}</p>
-                      <p className="text-[10px] text-blue-700 font-mono mt-1">{acc.email}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </form>
           )}
 

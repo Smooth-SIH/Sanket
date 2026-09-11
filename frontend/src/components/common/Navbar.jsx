@@ -20,7 +20,6 @@ export const Navbar = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const user = useSelector((state) => state.auth.user);
   const activeAlertCount = useSelector((state) => state.alerts.activeAlertCount);
-  const latestScan = useSelector((state) => state.satellite.latestScan);
 
   const navItems = [
     { id: 'dashboard', label: 'Live Operations', icon: LayoutDashboard },
@@ -32,7 +31,6 @@ export const Navbar = () => {
 
   const isLanding = currentView === 'landing';
   const isAuth = currentView === 'auth';
-  const isFallback = latestScan?.is_fallback || latestScan?.data_source === 'SIMULATED_MOCK_FALLBACK';
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
@@ -48,15 +46,9 @@ export const Navbar = () => {
             <ShieldAlert className="w-6 h-6 text-amber-400" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-lg text-slate-900 tracking-tight">
-                SANKET
-              </span>
-              <span className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                <span className={`w-1.5 h-1.5 rounded-full ${isFallback ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
-                <span>{isFallback ? 'SIMULATED FEED' : 'INSAT-3DR LIVE'}</span>
-              </span>
-            </div>
+            <span className="font-bold text-lg text-slate-900 tracking-tight">
+              SANKET
+            </span>
             <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
               National Severe Weather Nowcasting Portal
             </p>

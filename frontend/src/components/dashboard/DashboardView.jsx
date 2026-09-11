@@ -115,40 +115,15 @@ export const DashboardView = () => {
   const isWarning = assessment.severity === 'WARNING';
   const isWatch = assessment.severity === 'WATCH';
 
-  const isFallback = latestScan?.is_fallback || latestScan?.data_source === 'SIMULATED_MOCK_FALLBACK';
-  const isMosdac = latestScan?.data_source_mode === 'MOSDAC' || latestScan?.satellite?.includes('MOSDAC');
-
-  const dataSourceLabel = isMosdac
-    ? 'ISRO MOSDAC Level-2B Sounder (Operational HDF5)'
-    : latestScan?.data_source_mode === 'LIVE_AUTO'
-    ? 'Live OpenWeather & Open-Meteo Atmospheric Soundings'
-    : isFallback
-    ? 'Simulated Physics Baseline Fallback'
-    : (latestScan?.satellite || 'Live Satellite Telemetry');
-
   return (
     <div className="space-y-6">
       
       {/* 1. Official Header Toolbar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              National Meteorological Operations Console
-            </h1>
-            <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase border ${
-              isMosdac 
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
-                : isFallback 
-                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                : 'bg-blue-50 text-blue-800 border-blue-200'
-            }`}>
-              {isMosdac ? 'ISRO MOSDAC' : 'Live Sounder'}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-1 font-mono">
-            INSAT-3DR Telemetry • Scan ID: {latestScan?.scan_id || 'MOSDAC_SCAN_ACTIVE'} • Data Source: <strong className={isMosdac ? 'text-emerald-700 font-semibold' : isFallback ? 'text-amber-700' : 'text-blue-700'}>{dataSourceLabel}</strong>
-          </p>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            National Meteorological Operations Console
+          </h1>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -185,12 +160,12 @@ export const DashboardView = () => {
             : 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
         }`}>
           <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold tracking-wider uppercase flex items-center space-x-1">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-xs font-bold tracking-wider uppercase flex items-center space-x-1.5 shrink-0 mr-3">
                 <AlertTriangle className="w-4 h-4" />
                 <span>Primary Hazard Assessment</span>
               </span>
-              <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
+              <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold border shrink-0 whitespace-nowrap ml-auto ${
                 isCritical
                   ? 'bg-red-600 text-white border-red-700'
                   : isWarning
