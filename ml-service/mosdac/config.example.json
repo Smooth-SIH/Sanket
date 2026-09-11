@@ -1,0 +1,21 @@
+{
+  "user_credentials": {
+    "username/email": "your_mosdac_email@example.com",
+    "password": "your_mosdac_password"
+  },
+  "search_parameters": {
+    "datasetId": "3RSND_L2B_SA1",
+    "startTime": "2026-09-08",
+    "endTime": "2026-09-11",
+    "count": "3",
+    "boundingBox": "",
+    "gId": ""
+  },
+  "download_settings": {
+    "download_path": "c:/Users/Shubham/Desktop/My Works/Sanket/data/raw/",
+    "organize_by_date": false,
+    "skip_user_input": false,
+    "generate_error_logs": true,
+    "error_logs_dir": ""
+  }
+}

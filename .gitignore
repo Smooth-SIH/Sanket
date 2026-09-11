@@ -2,6 +2,12 @@
 .env
 .env.*
 !.env.example
+ml-service/mosdac/config.json
+!ml-service/mosdac/config.example.json
+
+# Satellite Data & Download Logs
+data/raw/
+error_logs/
 
 # Python
 __pycache__/
