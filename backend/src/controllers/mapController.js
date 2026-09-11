@@ -8,12 +8,14 @@ const defaultRiskZones = {
       properties: {
         id: "zone-1",
         name: "Garhwal Himalayan Cloudburst High Danger Zone",
+        region: "Uttarakhand (Garhwal)",
         hazard: "Cloudburst",
         severity: "CRITICAL",
         iwv: 64.2,
         ctt: 204.1,
         cape: 3840,
-        color: "#ef4444"
+        color: "#ef4444",
+        center: [79.06, 30.73]
       },
       geometry: {
         type: "Polygon",
@@ -33,12 +35,14 @@ const defaultRiskZones = {
       properties: {
         id: "zone-2",
         name: "Teesta Basin Flash Flood Contour",
+        region: "Sikkim (Teesta Basin)",
         hazard: "Flash Flood",
         severity: "CRITICAL",
         iwv: 61.5,
         ctt: 209.8,
         cape: 3100,
-        color: "#ff6b35"
+        color: "#ff6b35",
+        center: [88.51, 27.53]
       },
       geometry: {
         type: "Polygon",
@@ -58,12 +62,14 @@ const defaultRiskZones = {
       properties: {
         id: "zone-3",
         name: "Kullu Convective Hailstorm Cell",
+        region: "Himachal (Kullu Valley)",
         hazard: "Hailstorm",
         severity: "WARNING",
         iwv: 53.8,
         ctt: 216.0,
         cape: 2950,
-        color: "#eab308"
+        color: "#eab308",
+        center: [77.10, 31.95]
       },
       geometry: {
         type: "Polygon",
