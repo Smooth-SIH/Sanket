@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { MapContainer, TileLayer, Polygon, Polyline, Marker, Popup, GeoJSON, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Play, Pause, RotateCcw, ShieldAlert, Layers, Waves, Navigation, Building2, Home, MapPin, Filter } from 'lucide-react';
@@ -96,7 +97,24 @@ const createWaterbodyIcon = (item) => {
   });
 };
 
+// Pulsing Radar Epicenter Marker for Active Satellite Hotspots
+const createEpicenterIcon = (severity) => {
+  const color = severity === 'CRITICAL' ? '#ef4444' : severity === 'WARNING' ? '#f97316' : '#eab308';
+  return L.divIcon({
+    className: 'custom-radar-epicenter',
+    html: `
+      <div style="position: relative; width: 32px; height: 32px; transform: translate(-16px, -16px);">
+        <div style="position: absolute; inset: 0; border-radius: 50%; background-color: ${color}; opacity: 0.35; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="position: absolute; top: 8px; left: 8px; width: 16px; height: 16px; border-radius: 50%; background-color: ${color}; border: 2.5px solid #ffffff; box-shadow: 0 0 10px ${color};"></div>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+};
+
 export const MapView = () => {
+  const latestScan = useSelector((state) => state.satellite.latestScan);
   const [riskZones, setRiskZones] = useState([]);
   const [assets, setAssets] = useState([]);
   const [timelineFrames, setTimelineFrames] = useState([]);
@@ -131,7 +149,7 @@ export const MapView = () => {
       }
     };
     loadData();
-  }, []);
+  }, [latestScan]);
 
   // Timeline Animation Loop
   useEffect(() => {
@@ -660,35 +678,56 @@ export const MapView = () => {
             </Marker>
           ))}
 
-          {/* Live Hazard Polygons (Garhwal Cloudburst, Teesta Flood, Kullu Hailstorm) */}
+          {/* Live Hazard Polygons & Satellite Radar Epicenters */}
           {showPolygons && riskZones.map((feature) => {
             const coords = feature.geometry.coordinates[0].map(([lon, lat]) => [lat, lon]);
-            const isRed = feature.properties.severity === 'CRITICAL';
-            const color = isRed ? '#dc2626' : '#ea580c';
+            const severity = feature.properties.severity || 'WARNING';
+            const isRed = severity === 'CRITICAL';
+            const color = isRed ? '#dc2626' : (severity === 'WARNING' ? '#ea580c' : '#eab308');
+            const center = feature.properties.center ? [feature.properties.center[1], feature.properties.center[0]] : coords[0];
 
             return (
-              <Polygon
-                key={feature.properties.id}
-                positions={coords}
-                pathOptions={{
-                  color: color,
-                  fillColor: color,
-                  fillOpacity: 0.45,
-                  weight: 2.5
-                }}
-              >
-                <Popup>
-                  <div className="p-1 font-inter text-xs space-y-1">
-                    <h4 className="font-bold text-slate-900 text-sm">{feature.properties.name}</h4>
-                    <p className="text-slate-600">Hazard: <strong className="text-slate-900">{feature.properties.hazard}</strong></p>
-                    <p className="text-slate-600">Column Vapor: <strong>{feature.properties.iwv} mm</strong></p>
-                    <p className="text-slate-600">Cloud Top Temp: <strong>{feature.properties.ctt} K</strong></p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white uppercase">
-                      {feature.properties.severity} HAZARD ZONE
-                    </span>
-                  </div>
-                </Popup>
-              </Polygon>
+              <React.Fragment key={feature.properties.id}>
+                <Polygon
+                  positions={coords}
+                  pathOptions={{
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.35,
+                    weight: 2.5
+                  }}
+                >
+                  <Popup>
+                    <div className="p-1 font-inter text-xs space-y-1">
+                      <h4 className="font-bold text-slate-900 text-sm">{feature.properties.name}</h4>
+                      <p className="text-slate-600">Hazard: <strong className="text-slate-900">{feature.properties.hazard}</strong></p>
+                      <p className="text-slate-600">Column Vapor (IWV): <strong>{feature.properties.iwv} mm</strong></p>
+                      <p className="text-slate-600">Cloud Top Temp (CTT): <strong>{feature.properties.ctt} K</strong></p>
+                      {feature.properties.cape && <p className="text-slate-600">Convective Energy: <strong>{feature.properties.cape} J/kg</strong></p>}
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase ${isRed ? 'bg-red-600' : 'bg-orange-600'}`}>
+                        {severity} SATELLITE CELL
+                      </span>
+                    </div>
+                  </Popup>
+                </Polygon>
+
+                {/* Pulsing Convective Epicenter Marker */}
+                {center && (
+                  <Marker
+                    position={center}
+                    icon={createEpicenterIcon(severity)}
+                  >
+                    <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                      <div className="font-sans text-[11px] p-0.5">
+                        <span className="font-bold text-slate-900">{feature.properties.region || feature.properties.name}</span>
+                        <div className="text-slate-500 font-mono text-[10px]">
+                          IWV: {feature.properties.iwv}mm • CTT: {feature.properties.ctt}K
+                        </div>
+                      </div>
+                    </Tooltip>
+                  </Marker>
+                )}
+              </React.Fragment>
             );
           })}
 

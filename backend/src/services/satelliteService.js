@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { cacheStore } from '../config/redis.js';
 import { getNowcastPrediction } from './mlProxyService.js';
+import { syncAlertsWithSatellite } from '../controllers/alertController.js';
 
 let ioInstance = null;
 let activeScanCache = null;
@@ -59,17 +60,24 @@ export const fetchAndProcessSatelliteData = async () => {
     activeScanCache = scanData;
     await cacheStore.set('latest_insat3d_scan', JSON.stringify(scanData), 'EX', 600);
 
+    // Synchronize dynamic active alerts with satellite observations
+    syncAlertsWithSatellite(scanData);
+
     if (ioInstance) {
       ioInstance.emit('satellite:update', scanData);
       
       // Auto-trigger alert broadcast if critical risk detected
       if (scanData.nowcast_assessment?.overall_risk_score > 70) {
+        const criticalHotspot = scanData.regional_hotspots?.find(h => h.risk === 'CRITICAL') || scanData.regional_hotspots?.[0];
+        const affectedRegion = criticalHotspot ? criticalHotspot.region : "Identified Convective Sector";
+
         ioInstance.emit('alert:critical', {
           id: `ALT_${Date.now()}`,
-          title: `CRITICAL ${scanData.nowcast_assessment.primary_hazard} WARNING`,
+          title: `CRITICAL ${scanData.nowcast_assessment.primary_hazard} WARNING - ${affectedRegion.toUpperCase()}`,
           hazardType: scanData.nowcast_assessment.primary_hazard,
           severity: "CRITICAL",
-          affectedRegion: "Garhwal Himalayas & Teesta Basin",
+          affectedRegion: affectedRegion,
+          coordinates: criticalHotspot ? [criticalHotspot.lon, criticalHotspot.lat] : [78.5, 30.5],
           riskScore: scanData.nowcast_assessment.overall_risk_score,
           leadTimeMins: scanData.nowcast_assessment.estimated_lead_time_mins,
           parameters: scanData.summary_metrics,

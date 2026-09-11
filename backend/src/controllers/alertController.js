@@ -61,6 +61,69 @@ let sampleAlerts = [
   }
 ];
 
+/**
+ * Synchronizes active operational alerts with real satellite scan convective hotspots.
+ */
+export const syncAlertsWithSatellite = (scanData) => {
+  if (!scanData || !scanData.regional_hotspots) return sampleAlerts;
+
+  const assessment = scanData.nowcast_assessment || {};
+  const hazard = assessment.primary_hazard || 'Severe Convective Storm';
+  const leadTime = assessment.estimated_lead_time_mins || 40;
+
+  // Filter hotspots that warrant an active alert (CRITICAL or WARNING)
+  const severeHotspots = scanData.regional_hotspots.filter(
+    h => h.risk === 'CRITICAL' || h.risk === 'WARNING'
+  );
+
+  severeHotspots.forEach(hotspot => {
+    const slug = hotspot.region.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 12);
+    const alertId = `ALT-SAT-${slug}`;
+
+    const existingIdx = sampleAlerts.findIndex(a => a.id === alertId);
+
+    const calculatedRiskScore = hotspot.risk === 'CRITICAL'
+      ? Math.max(86.5, assessment.overall_risk_score || 88.0)
+      : Math.min(82.0, Math.max(68.0, assessment.overall_risk_score || 72.0));
+
+    const alertData = {
+      id: alertId,
+      title: `${hotspot.risk} ${hazard.toUpperCase()} ADVISORY - ${hotspot.region.toUpperCase()}`,
+      hazardType: hazard,
+      severity: hotspot.risk,
+      riskScore: calculatedRiskScore,
+      leadTimeMins: leadTime,
+      affectedRegion: hotspot.region,
+      coordinates: [hotspot.lon, hotspot.lat],
+      parameters: {
+        IWV_mm: hotspot.iwv,
+        CTT_K: hotspot.ctt,
+        CAPE_Jkg: scanData.summary_metrics?.CAPE_Jkg || 2850,
+        rain_rate_mmh: scanData.summary_metrics?.rain_rate_mmh || 58.0
+      },
+      acknowledged: false,
+      acknowledgedBy: null,
+      acknowledgedAt: null,
+      createdAt: scanData.timestamp || new Date().toISOString()
+    };
+
+    if (existingIdx >= 0) {
+      // Preserve acknowledge status if not newly elevated
+      const prev = sampleAlerts[existingIdx];
+      sampleAlerts[existingIdx] = {
+        ...alertData,
+        acknowledged: prev.severity === alertData.severity ? prev.acknowledged : false,
+        acknowledgedBy: prev.severity === alertData.severity ? prev.acknowledgedBy : null,
+        acknowledgedAt: prev.severity === alertData.severity ? prev.acknowledgedAt : null
+      };
+    } else {
+      sampleAlerts.unshift(alertData);
+    }
+  });
+
+  return sampleAlerts;
+};
+
 export const getAlerts = async (req, res) => {
   const { hazard, severity, acknowledged } = req.query;
   let filtered = [...sampleAlerts];

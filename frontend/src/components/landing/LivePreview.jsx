@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
-import { Radio, Activity, ArrowRight, Sliders } from 'lucide-react';
-import { useDispatch } from 'react-redux';
+import { Radio, Activity, ArrowRight, Sliders, RefreshCw } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentView } from '../../store/slices/authSlice';
 
 export const LivePreview = () => {
   const dispatch = useDispatch();
+  const latestScan = useSelector((state) => state.satellite.latestScan);
   const [iwvVal, setIwvVal] = useState(58.4);
   const [cttVal, setCttVal] = useState(212.0);
+  const [synced, setSynced] = useState(false);
 
   const calculateRisk = () => {
     const r = Math.min(98.5, (iwvVal / 65.0) * 45 + ((240 - cttVal) / 40.0) * 55);
     return Math.round(r * 10) / 10;
+  };
+
+  const handleSyncWithLiveScan = () => {
+    if (latestScan?.summary_metrics) {
+      setIwvVal(Number(latestScan.summary_metrics.IWV_mm) || 58.4);
+      setCttVal(Number(latestScan.summary_metrics.CTT_K) || 212.0);
+      setSynced(true);
+      setTimeout(() => setSynced(false), 2000);
+    }
   };
 
   const riskScore = calculateRisk();
@@ -48,13 +59,24 @@ export const LivePreview = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => dispatch(setCurrentView('dashboard'))}
-              className="px-3.5 py-1.5 rounded bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-sm transition-colors flex items-center space-x-1"
-            >
-              <span>Launch Full Ops Console</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleSyncWithLiveScan}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition-colors shadow-xs"
+                title="Populate sliders with live INSAT-3DR telemetry"
+              >
+                <Radio className={`w-3 h-3 text-emerald-600 ${synced ? 'animate-spin' : 'animate-pulse'}`} />
+                <span>{synced ? 'Synced Live Readings!' : 'Sync Live Satellite Telemetry'}</span>
+              </button>
+
+              <button
+                onClick={() => dispatch(setCurrentView('dashboard'))}
+                className="px-3.5 py-1.5 rounded bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-sm transition-colors flex items-center space-x-1"
+              >
+                <span>Launch Ops Console</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

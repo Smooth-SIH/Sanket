@@ -1,16 +1,57 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
-import { Cpu, Activity, Zap, CheckCircle2, HelpCircle, BarChart3 } from 'lucide-react';
+import { Cpu, Activity, Zap, CheckCircle2, HelpCircle, BarChart3, Radio } from 'lucide-react';
+
+const friendlyNames = {
+  'IWV_mm': 'Integrated Water Vapor (IWV)',
+  'CTT_K': 'Cloud Top Temp (CTT)',
+  'CAPE_Jkg': 'CAPE Atmospheric Energy',
+  'CIN_Jkg': 'Convective Inhibition (CIN)',
+  'rain_rate_mmh': 'Rain Rate (Precipitation)',
+  'wind_speed_kmh': 'Upper Level Wind Speed',
+  'humidity_pct': 'Relative Humidity',
+  'lifted_index': 'Lifted Index (LI)',
+  'k_index': 'George K-Index'
+};
+
+const formatValue = (feature, val) => {
+  if (val === undefined || val === null) return 'N/A';
+  if (feature.includes('IWV')) return `${val} mm`;
+  if (feature.includes('CTT')) return `${val} K`;
+  if (feature.includes('CAPE') || feature.includes('CIN')) return `${val} J/kg`;
+  if (feature.includes('rain')) return `${val} mm/h`;
+  if (feature.includes('wind')) return `${val} km/h`;
+  if (feature.includes('humidity')) return `${val}%`;
+  return `${val}`;
+};
+
+const defaultShapData = [
+  { feature: 'Integrated Water Vapor (IWV)', shap_value: 0.3412, val: '64.2 mm', impact: 'Increase Risk' },
+  { feature: 'Cloud Top Temp (CTT)', shap_value: 0.2845, val: '204.1 K', impact: 'Increase Risk' },
+  { feature: 'CAPE Atmospheric Energy', shap_value: 0.1982, val: '3840 J/kg', impact: 'Increase Risk' },
+  { feature: 'Rain Rate (Precipitation)', shap_value: 0.1420, val: '94.0 mm/h', impact: 'Increase Risk' },
+  { feature: 'Upper Level Wind Speed', shap_value: 0.0815, val: '68.5 km/h', impact: 'Increase Risk' },
+  { feature: 'Convective Inhibition (CIN)', shap_value: -0.0512, val: '12.5 J/kg', impact: 'Decrease Risk' }
+];
 
 export const AnalyticsView = () => {
-  const shapData = [
-    { feature: 'Integrated Water Vapor (IWV)', shap_value: 0.3412, val: '64.2 mm', impact: 'Increase Risk' },
-    { feature: 'Cloud Top Temp (CTT)', shap_value: 0.2845, val: '204.1 K', impact: 'Increase Risk' },
-    { feature: 'CAPE Atmospheric Energy', shap_value: 0.1982, val: '3840 J/kg', impact: 'Increase Risk' },
-    { feature: 'Rain Rate (Precipitation)', shap_value: 0.1420, val: '94.0 mm/h', impact: 'Increase Risk' },
-    { feature: 'Upper Level Wind Speed', shap_value: 0.0815, val: '68.5 km/h', impact: 'Increase Risk' },
-    { feature: 'Convective Inhibition (CIN)', shap_value: -0.0512, val: '12.5 J/kg', impact: 'Decrease Risk' }
-  ];
+  const latestScan = useSelector((state) => state.satellite.latestScan);
+
+  const rawAttributions = latestScan?.nowcast_assessment?.shap_explanation?.feature_attributions;
+
+  const shapData = rawAttributions && rawAttributions.length > 0
+    ? rawAttributions.map(attr => ({
+        feature: friendlyNames[attr.feature] || attr.feature,
+        shap_value: Number(attr.shap_value),
+        val: formatValue(attr.feature, attr.value),
+        impact: attr.impact || (attr.shap_value > 0 ? 'Increase Risk' : 'Decrease Risk')
+      }))
+    : defaultShapData;
+
+  const shapMargin = latestScan?.nowcast_assessment?.shap_explanation?.prediction_shap_sum !== undefined
+    ? `${latestScan.nowcast_assessment.shap_explanation.prediction_shap_sum > 0 ? '+' : ''}${latestScan.nowcast_assessment.shap_explanation.prediction_shap_sum}`
+    : '+0.82';
 
   return (
     <div className="space-y-6">
@@ -64,7 +105,7 @@ export const AnalyticsView = () => {
             SHAP TreeExplainer Atmospheric Feature Attribution
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Quantifying exact atmospheric variable contributions to current severe weather classification (+0.82 composite SHAP margin)
+            Quantifying exact atmospheric variable contributions to current nowcast classification ({shapMargin} composite SHAP margin • Scan {latestScan?.scan_id || 'Active Pass'})
           </p>
         </div>
 

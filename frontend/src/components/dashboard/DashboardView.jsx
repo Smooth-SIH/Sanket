@@ -116,6 +116,15 @@ export const DashboardView = () => {
   const isWatch = assessment.severity === 'WATCH';
 
   const isFallback = latestScan?.is_fallback || latestScan?.data_source === 'SIMULATED_MOCK_FALLBACK';
+  const isMosdac = latestScan?.data_source_mode === 'MOSDAC' || latestScan?.satellite?.includes('MOSDAC');
+
+  const dataSourceLabel = isMosdac
+    ? 'ISRO MOSDAC Level-2B Sounder (Operational HDF5)'
+    : latestScan?.data_source_mode === 'LIVE_AUTO'
+    ? 'Live OpenWeather & Open-Meteo Atmospheric Soundings'
+    : isFallback
+    ? 'Simulated Physics Baseline Fallback'
+    : (latestScan?.satellite || 'Live Satellite Telemetry');
 
   return (
     <div className="space-y-6">
@@ -127,12 +136,18 @@ export const DashboardView = () => {
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
               National Meteorological Operations Console
             </h1>
-            <span className="px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-blue-800 border border-blue-200">
-              Live Sounder
+            <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase border ${
+              isMosdac 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                : isFallback 
+                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                : 'bg-blue-50 text-blue-800 border-blue-200'
+            }`}>
+              {isMosdac ? 'ISRO MOSDAC' : 'Live Sounder'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1 font-mono">
-            INSAT-3DR Telemetry • Scan ID: {latestScan?.scan_id || 'MOSDAC_SCAN_ACTIVE'} • Data Source: <strong className={isFallback ? 'text-amber-700' : 'text-emerald-700'}>{isFallback ? 'Simulated Fallback Mode' : 'Live OpenWeather & Atmospheric Soundings'}</strong>
+            INSAT-3DR Telemetry • Scan ID: {latestScan?.scan_id || 'MOSDAC_SCAN_ACTIVE'} • Data Source: <strong className={isMosdac ? 'text-emerald-700 font-semibold' : isFallback ? 'text-amber-700' : 'text-blue-700'}>{dataSourceLabel}</strong>
           </p>
         </div>
 

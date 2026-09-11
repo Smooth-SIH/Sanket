@@ -1,3 +1,5 @@
+import { getLatestScanFromCache } from '../services/satelliteService.js';
+
 let sampleAssets = [
   {
     id: 'ast-101',
@@ -73,8 +75,56 @@ let sampleAssets = [
   }
 ];
 
+function getHaversineDistanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(1));
+}
+
 export const getAssets = async (req, res) => {
   const { category, risk } = req.query;
+
+  try {
+    const scanData = await getLatestScanFromCache();
+    const severeHotspots = scanData?.regional_hotspots?.filter(
+      h => h.risk === 'CRITICAL' || h.risk === 'WARNING'
+    ) || [];
+
+    if (severeHotspots.length > 0) {
+      sampleAssets.forEach(asset => {
+        let minDistance = Infinity;
+        let closestHotspot = null;
+        for (const h of severeHotspots) {
+          const dist = getHaversineDistanceKm(asset.lat, asset.lon, h.lat, h.lon);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestHotspot = h;
+          }
+        }
+        asset.distanceToHazardKm = minDistance;
+        asset.nearestHazardRegion = closestHotspot?.region || null;
+
+        if (minDistance < 8.0) {
+          asset.currentRiskStatus = 'EVACUATION_REQUIRED';
+        } else if (minDistance < 35.0) {
+          asset.currentRiskStatus = 'HIGH_DANGER';
+        } else if (minDistance < 75.0) {
+          asset.currentRiskStatus = 'MODERATE';
+        } else {
+          asset.currentRiskStatus = 'SAFE';
+        }
+      });
+    }
+  } catch (err) {
+    console.error('[Asset Controller] Failed to update asset proximity:', err);
+  }
+
   let filtered = [...sampleAssets];
 
   if (category) {
@@ -119,13 +169,21 @@ export const assessAssetRisk = async (req, res) => {
   if (!asset) return res.status(404).json({ message: 'Asset not found' });
 
   // Compute dynamic risk based on proximity and vulnerability
-  const isHighRisk = asset.distanceToHazardKm < 10.0;
+  const isCritical = asset.distanceToHazardKm < 10.0;
+  const isHighDanger = asset.distanceToHazardKm < 35.0;
+
   return res.json({
     assetId: asset.id,
     assetName: asset.name,
-    riskScore: isHighRisk ? 92.5 : 34.0,
-    riskLevel: isHighRisk ? 'CRITICAL_VULNERABILITY' : 'LOW_RISK',
-    recommendedMitigation: isHighRisk ? 'Activate structural barrier protocols & notify evacuation commanders' : 'Maintain standard telemetry monitor',
+    riskScore: isCritical ? 94.5 : isHighDanger ? 78.0 : 25.0,
+    riskLevel: isCritical ? 'EVACUATION_REQUIRED' : isHighDanger ? 'HIGH_DANGER' : 'LOW_RISK',
+    recommendedMitigation: isCritical 
+      ? 'Activate immediate structural barrier protocols & execute local evacuation' 
+      : isHighDanger
+      ? 'Engage standby flood barriers & notify incident commanders'
+      : 'Maintain standard telemetry monitor',
+    nearestHazardRegion: asset.nearestHazardRegion || 'Distant Corridor',
+    distanceToHazardKm: asset.distanceToHazardKm,
     lastAssessed: new Date().toISOString()
   });
 };

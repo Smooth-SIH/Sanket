@@ -1,10 +1,17 @@
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentView } from '../../store/slices/authSlice';
 import { Radio, ArrowRight, Layers, ShieldCheck, MapPin, AlertCircle } from 'lucide-react';
 
 export const HeroSection = () => {
   const dispatch = useDispatch();
+  const latestScan = useSelector((state) => state.satellite.latestScan);
+
+  const isMosdac = latestScan?.data_source_mode === 'MOSDAC' || latestScan?.satellite?.includes('MOSDAC');
+  const iwv = latestScan?.summary_metrics?.IWV_mm ? `${latestScan.summary_metrics.IWV_mm} mm` : '58.4 mm';
+  const ctt = latestScan?.summary_metrics?.CTT_K ? `${latestScan.summary_metrics.CTT_K} K` : '210.5 K';
+  const cape = latestScan?.summary_metrics?.CAPE_Jkg ? `${latestScan.summary_metrics.CAPE_Jkg.toLocaleString()} J/kg` : '2,450 J/kg';
+  const leadTime = latestScan?.nowcast_assessment?.estimated_lead_time_mins ? `Up to ${latestScan.nowcast_assessment.estimated_lead_time_mins} Mins` : 'Up to 45 Mins';
 
   return (
     <section className="bg-white border-b border-slate-200 py-12 lg:py-16">
@@ -13,7 +20,7 @@ export const HeroSection = () => {
         {/* Official Tagline Pill */}
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold mb-6">
           <Radio className="w-3.5 h-3.5 text-blue-700 animate-pulse" />
-          <span>INSAT-3D / 3DR Sounder Telemetry & IMD Radar Telemetry Stream</span>
+          <span>{isMosdac ? 'ISRO MOSDAC INSAT-3DR Level-2B Sounder Stream' : 'INSAT-3D / 3DR Sounder & IMD Radar Telemetry Stream'}</span>
         </div>
 
         {/* Hero Title & Government Mission Statement */}
@@ -53,26 +60,26 @@ export const HeroSection = () => {
         <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 p-5 rounded-lg bg-slate-50 border border-slate-200">
           <div className="border-r border-slate-200 pr-4">
             <p className="text-xs text-slate-500 font-medium">COLUMN MOISTURE (IWV)</p>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">58.4 mm</p>
-            <span className="text-[11px] text-blue-700 font-medium">Sounder Ingestion</span>
+            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">{iwv}</p>
+            <span className="text-[11px] text-blue-700 font-medium">{isMosdac ? 'MOSDAC Sounder SA1' : 'Sounder Ingestion'}</span>
           </div>
 
           <div className="border-r border-slate-200 pr-4">
             <p className="text-xs text-slate-500 font-medium">CLOUD TOP TEMP (CTT)</p>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">210.5 K</p>
-            <span className="text-[11px] text-slate-600 font-medium">Thermal IR Band 19</span>
+            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">{ctt}</p>
+            <span className="text-[11px] text-slate-600 font-medium">Thermal IR Sounder</span>
           </div>
 
           <div className="border-r border-slate-200 pr-4">
             <p className="text-xs text-slate-500 font-medium">CONVECTIVE ENERGY (CAPE)</p>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">2,450 J/kg</p>
+            <p className="text-2xl font-bold text-slate-900 tabular-nums mt-1">{cape}</p>
             <span className="text-[11px] text-amber-700 font-medium">Atmospheric Instability</span>
           </div>
 
           <div>
             <p className="text-xs text-slate-500 font-medium">DISASTER LEAD TIME</p>
-            <p className="text-2xl font-bold text-emerald-700 tabular-nums mt-1">Up to 45 Mins</p>
-            <span className="text-[11px] text-slate-600 font-medium">Prior to Touchdown</span>
+            <p className="text-2xl font-bold text-emerald-700 tabular-nums mt-1">{leadTime}</p>
+            <span className="text-[11px] text-slate-600 font-medium">Prior to Convective Touchdown</span>
           </div>
         </div>
 
