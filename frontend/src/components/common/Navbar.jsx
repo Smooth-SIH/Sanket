@@ -23,18 +23,6 @@ export const Navbar = () => {
   const isLiveConnected = useSelector((state) => state.satellite.isLiveConnected);
   const latestScan = useSelector((state) => state.satellite.latestScan);
 
-  const [currentTime, setCurrentTime] = useState('');
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) + ' IST');
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   const navItems = [
     { id: 'dashboard', label: 'Live Operations', icon: LayoutDashboard },
     { id: 'map', label: 'Geospatial Radar', icon: Map },
@@ -48,46 +36,8 @@ export const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-      {/* 1. National Tricolor Accent Line */}
-      <div className="h-1 w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
-
-      {/* 2. Official Government Top Strip */}
-      <div className="bg-[#0A1C2A] text-slate-300 text-[11px] px-4 lg:px-8 py-1.5 flex items-center justify-between border-b border-slate-800">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-1.5">
-            <span className="font-semibold text-white tracking-wider uppercase">भारत सरकार</span>
-            <span className="text-slate-500">|</span>
-            <span className="text-slate-300">Government of India</span>
-          </div>
-          <span className="hidden md:inline text-slate-600">•</span>
-          <span className="hidden md:inline text-slate-400">Ministry of Earth Sciences (MoES) & ISRO MOSDAC</span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="hidden sm:flex items-center space-x-1 text-slate-300 font-mono text-[11px]">
-            <span>{currentTime}</span>
-          </div>
-
-          {/* Telemetry Status Indicator */}
-          <div className="flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-0.5 rounded border border-slate-700">
-            <span className={`w-2 h-2 rounded-full ${isFallback ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
-            <span className="text-[10px] font-medium text-slate-200">
-              {isFallback ? 'TELEMETRY: SIMULATED' : 'INSAT-3DR: LIVE FEED'}
-            </span>
-          </div>
-
-          <a 
-            href="tel:1070" 
-            className="hidden lg:flex items-center space-x-1 text-amber-300 hover:text-amber-200 font-semibold"
-          >
-            <PhoneCall className="w-3 h-3" />
-            <span>NDMA: 1070</span>
-          </a>
-        </div>
-      </div>
-
-      {/* 3. Main Navigation & Brand Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      {/* Main Navigation & Brand Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
         {/* Brand Title */}
         <div 
           onClick={() => dispatch(setCurrentView('landing'))}
@@ -101,11 +51,12 @@ export const Navbar = () => {
               <span className="font-bold text-lg text-slate-900 tracking-tight">
                 SANKET
               </span>
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-800 border border-blue-200">
-                MoES / IMD
+              <span className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <span className={`w-1.5 h-1.5 rounded-full ${isFallback ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+                <span>{isFallback ? 'SIMULATED FEED' : 'INSAT-3DR LIVE'}</span>
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium leading-none">
+            <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
               National Severe Weather Nowcasting Portal
             </p>
           </div>

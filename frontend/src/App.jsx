@@ -89,16 +89,11 @@ export default function App() {
         )}
       </main>
 
-      {/* Official Footer only inside the App (Landing has its own footer) */}
+      {/* Console Footer inside the App */}
       {!isLanding && (
-        <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-xs mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p>© 2026 SANKET — Ministry of Earth Sciences, ISRO MOSDAC & NDMA. All rights reserved.</p>
-            <div className="flex items-center space-x-4 text-slate-400">
-              <span>National Disaster Helpline: <strong className="text-white">1070 / 1078</strong></span>
-              <span>•</span>
-              <span>Operational Build: <strong className="text-white">v2.4-GovOps</strong></span>
-            </div>
+        <footer className="bg-slate-900 text-slate-400 py-5 border-t border-slate-800 text-xs mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            <p>2026 Smooth. All Rights Reserved.</p>
           </div>
         </footer>
       )}

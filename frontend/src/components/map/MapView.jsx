@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { MapContainer, TileLayer, Polygon, Polyline, Marker, Popup, GeoJSON, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, GeoJSON, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Play, Pause, RotateCcw, ShieldAlert, Layers, Waves, Navigation, Building2, Home, MapPin, Filter } from 'lucide-react';
+import { 
+  Play, 
+  Pause, 
+  RotateCcw, 
+  ShieldAlert, 
+  Layers, 
+  Building2, 
+  Home, 
+  Navigation, 
+  Waves, 
+  MapPin, 
+  Radio,
+  Info
+} from 'lucide-react';
 import { fetchMapRiskZones, fetchAssets, fetchSatelliteTimeline } from '../../services/api';
 
 // Official Survey of India post-2019 administrative datasets
 import indiaStatesGeoJson from '../../data/india_states_soi.json';
 import indiaNationalBorderGeoJson from '../../data/india_national_border_soi.json';
 
-// Weather Nowcasting Hydrology, Infrastructure & Settlement Datasets
+// Weather Nowcasting Hydrology, Infrastructure & Settlement Reference Datasets
 import { WATERBODIES } from '../../data/waterbodies';
 import { SETTLEMENTS } from '../../data/settlements';
 import { TRANSPORT_CORRIDORS } from '../../data/transportCorridors';
@@ -26,74 +39,108 @@ const MapResizeHandler = () => {
   return null;
 };
 
-// Custom Marker Icons for Infrastructure Assets
+// Geodesic distance calculation in kilometers
+function getDistanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Find closest tactical feature (settlement, river, lake/reservoir, or transport corridor) to click location
+function findClosestTacticalFeature(clickLat, clickLng) {
+  let closest = null;
+  let minDistance = 45; // 45 km click radius tolerance
+
+  // 1. Check Settlements (Cities, Towns, High-Risk Villages)
+  for (const s of SETTLEMENTS) {
+    const dist = getDistanceKm(clickLat, clickLng, s.lat, s.lon);
+    if (dist < minDistance) {
+      minDistance = dist;
+      closest = {
+        kind: 'SETTLEMENT',
+        data: s,
+        position: [s.lat, s.lon],
+        distance: dist
+      };
+    }
+  }
+
+  // 2. Check Waterbodies (Lakes, Reservoirs, Rivers)
+  for (const w of WATERBODIES) {
+    if (w.lat && w.lon) {
+      const dist = getDistanceKm(clickLat, clickLng, w.lat, w.lon);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closest = {
+          kind: 'WATERBODY',
+          data: w,
+          position: [w.lat, w.lon],
+          distance: dist
+        };
+      }
+    } else if (w.coordinates) {
+      for (const pt of w.coordinates) {
+        const dist = getDistanceKm(clickLat, clickLng, pt[0], pt[1]);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closest = {
+            kind: 'RIVER',
+            data: w,
+            position: [pt[0], pt[1]],
+            distance: dist
+          };
+        }
+      }
+    }
+  }
+
+  // 3. Check Transport Corridors (Highways, Rail Lines)
+  for (const t of TRANSPORT_CORRIDORS) {
+    if (t.coordinates) {
+      for (const pt of t.coordinates) {
+        const dist = getDistanceKm(clickLat, clickLng, pt[0], pt[1]);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closest = {
+            kind: 'TRANSPORT',
+            data: t,
+            position: [pt[0], pt[1]],
+            distance: dist
+          };
+        }
+      }
+    }
+  }
+
+  return closest;
+}
+
+// Click listener inside map container
+const MapClickInspector = ({ onSelect }) => {
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+      const match = findClosestTacticalFeature(lat, lng);
+      if (match) {
+        onSelect(match);
+      }
+    }
+  });
+  return null;
+};
+
+// Custom Marker Icons for Monitored Infrastructure Assets
 const createAssetIcon = (color) => {
   return L.divIcon({
     className: 'custom-leaflet-marker',
-    html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 1px 5px rgba(0,0,0,0.5);"></div>`,
+    html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 1px 5px rgba(0,0,0,0.6);"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7]
-  });
-};
-
-// Custom Icons for Settlements (Cities, Towns, Villages)
-const createSettlementIcon = (item) => {
-  const isCity = item.type === 'CITY';
-  const isTown = item.type === 'TOWN';
-
-  if (isCity) {
-    return L.divIcon({
-      className: 'custom-settlement-city',
-      html: `
-        <div style="transform: translate(-50%, -50%);" class="flex items-center space-x-1 cursor-pointer pointer-events-auto transition-transform hover:scale-110">
-          <div class="w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-md flex items-center justify-center ring-1 ring-blue-400">
-            <div class="w-1 h-1 rounded-full bg-white"></div>
-          </div>
-          <span class="px-1.5 py-0.2 rounded text-[10px] font-bold tracking-tight whitespace-nowrap bg-slate-900/90 text-white border border-slate-700/80 shadow-xs backdrop-blur-xs">
-            ${item.name}
-          </span>
-        </div>
-      `,
-      iconSize: [0, 0],
-      iconAnchor: [0, 0]
-    });
-  }
-
-  if (isTown) {
-    return L.divIcon({
-      className: 'custom-settlement-town',
-      html: `
-        <div style="transform: translate(-50%, -50%);" class="flex items-center justify-center w-2.5 h-2.5 rounded-full bg-amber-400 border border-white shadow-sm ring-1 ring-amber-500/70 cursor-pointer pointer-events-auto transition-transform hover:scale-125">
-          <div class="w-0.5 h-0.5 rounded-full bg-slate-900"></div>
-        </div>
-      `,
-      iconSize: [0, 0],
-      iconAnchor: [0, 0]
-    });
-  }
-
-  // Village (High-risk Himalayan/Basin Outpost)
-  return L.divIcon({
-    className: 'custom-settlement-village',
-    html: `
-      <div style="transform: translate(-50%, -50%);" class="flex items-center justify-center w-2 h-2 rounded-full bg-red-500 border border-white shadow-xs ring-1 ring-red-400/60 cursor-pointer pointer-events-auto transition-transform hover:scale-125"></div>
-    `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
-  });
-};
-
-// Custom Icons for Reservoirs & Lakes
-const createWaterbodyIcon = (item) => {
-  return L.divIcon({
-    className: 'custom-waterbody-marker',
-    html: `
-      <div style="transform: translate(-50%, -50%);" class="flex items-center justify-center w-3 h-3 rounded-full bg-sky-400 border-2 border-white shadow-md ring-1 ring-sky-300 cursor-pointer pointer-events-auto transition-transform hover:scale-125">
-        <div class="w-1 h-1 rounded-full bg-sky-900"></div>
-      </div>
-    `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
   });
 };
 
@@ -104,7 +151,7 @@ const createEpicenterIcon = (severity) => {
     className: 'custom-radar-epicenter',
     html: `
       <div style="position: relative; width: 32px; height: 32px; transform: translate(-16px, -16px);">
-        <div style="position: absolute; inset: 0; border-radius: 50%; background-color: ${color}; opacity: 0.35; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="position: absolute; inset: 0; border-radius: 50%; background-color: ${color}; opacity: 0.4; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
         <div style="position: absolute; top: 8px; left: 8px; width: 16px; height: 16px; border-radius: 50%; background-color: ${color}; border: 2.5px solid #ffffff; box-shadow: 0 0 10px ${color};"></div>
       </div>
     `,
@@ -121,14 +168,10 @@ export const MapView = () => {
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Layer Toggles
-  const [showPolitical, setShowPolitical] = useState(true);
-  const [showWaterbodies, setShowWaterbodies] = useState(true);
-  const [showTransport, setShowTransport] = useState(true);
-  const [showSettlements, setShowSettlements] = useState(true);
-  const [settlementFilter, setSettlementFilter] = useState('ALL'); // 'ALL' | 'CITY' | 'TOWN' | 'VILLAGE'
+  // Layer Toggles (State Boundaries is permanent and cannot be turned off)
   const [showPolygons, setShowPolygons] = useState(true);
   const [showAssets, setShowAssets] = useState(true);
+  const [selectedTacticalFeature, setSelectedTacticalFeature] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -168,105 +211,45 @@ export const MapView = () => {
     maxRiskScore: 68
   };
 
-  // State Polygon Styles matching Official Survey of India Color Palette
+  // State Boundary Style over Tactical Satellite Imagery
   const getStateStyle = (feature) => {
     const name = feature.properties?.st_nm || '';
 
-    // Unified Ladakh (Yellow/Amber - Survey of India reference standard)
-    if (name === 'Ladakh') {
+    // Subtle tint highlights for key monitored regions while keeping satellite imagery crystal clear
+    if (name === 'Ladakh' || name === 'Jammu and Kashmir') {
       return {
-        fillColor: '#fde047',
-        weight: 2,
-        opacity: 0.95,
-        color: '#ca8a04',
-        fillOpacity: 0.22
-      };
-    }
-
-    // Unified Jammu & Kashmir (Purple/Lavender - Survey of India reference standard)
-    if (name === 'Jammu and Kashmir') {
-      return {
-        fillColor: '#c084fc',
-        weight: 2,
-        opacity: 0.95,
-        color: '#9333ea',
-        fillOpacity: 0.25
-      };
-    }
-
-    // Himachal Pradesh (Peach/Amber)
-    if (name === 'Himachal Pradesh') {
-      return {
-        fillColor: '#fed7aa',
+        fillColor: '#38bdf8',
         weight: 1.6,
         opacity: 0.9,
-        color: '#ea580c',
-        fillOpacity: 0.22
+        color: '#38bdf8',
+        fillOpacity: 0.05
       };
     }
-
-    // Uttarakhand (Soft Emerald)
-    if (name === 'Uttarakhand') {
+    if (name === 'Uttarakhand' || name === 'Himachal Pradesh') {
       return {
-        fillColor: '#a7f3d0',
+        fillColor: '#34d399',
         weight: 1.6,
         opacity: 0.9,
-        color: '#059669',
-        fillOpacity: 0.22
+        color: '#34d399',
+        fillOpacity: 0.06
       };
     }
-
-    // Punjab (Rose/Pink)
-    if (name === 'Punjab') {
+    if (name === 'Sikkim' || name === 'Assam' || name === 'Kerala') {
       return {
-        fillColor: '#fbcfe8',
-        weight: 1.5,
-        opacity: 0.85,
-        color: '#db2777',
-        fillOpacity: 0.20
+        fillColor: '#f59e0b',
+        weight: 1.6,
+        opacity: 0.9,
+        color: '#f59e0b',
+        fillOpacity: 0.06
       };
     }
 
-    // Haryana & Delhi (Slate/Cyan)
-    if (name === 'Haryana' || name === 'Delhi') {
-      return {
-        fillColor: '#cbd5e1',
-        weight: 1.5,
-        opacity: 0.85,
-        color: '#475569',
-        fillOpacity: 0.20
-      };
-    }
-
-    // Rajasthan (Warm Sand)
-    if (name === 'Rajasthan') {
-      return {
-        fillColor: '#fef08a',
-        weight: 1.5,
-        opacity: 0.85,
-        color: '#d97706',
-        fillOpacity: 0.20
-      };
-    }
-
-    // Uttar Pradesh (Amber/Coral)
-    if (name === 'Uttar Pradesh') {
-      return {
-        fillColor: '#ffedd5',
-        weight: 1.5,
-        opacity: 0.85,
-        color: '#ea580c',
-        fillOpacity: 0.20
-      };
-    }
-
-    // Default for all other Indian States & UTs
     return {
-      fillColor: '#93c5fd',
+      fillColor: '#38bdf8',
       weight: 1.3,
       opacity: 0.8,
-      color: '#2563eb',
-      fillOpacity: 0.18
+      color: '#38bdf8',
+      fillOpacity: 0.03
     };
   };
 
@@ -276,8 +259,9 @@ export const MapView = () => {
       mouseover: (e) => {
         const target = e.target;
         target.setStyle({
-          weight: 2.8,
-          fillOpacity: 0.40
+          weight: 2.4,
+          color: '#ffffff',
+          fillOpacity: 0.15
         });
         target.bringToFront();
       },
@@ -293,25 +277,15 @@ export const MapView = () => {
           <span>${name}</span>
           <span class="text-[10px] px-1 py-0.2 rounded bg-blue-100 text-blue-800 font-semibold uppercase">India</span>
         </div>
-        <p class="text-[10px] text-slate-500 mt-0.5">Sovereign State/UT of India</p>
+        <p class="text-[10px] text-slate-500 mt-0.5">Survey of India Demarcation</p>
       </div>
     `, { sticky: true, className: 'state-boundary-tooltip' });
   };
 
-  // Filter settlements according to selection
-  const filteredSettlements = SETTLEMENTS.filter((s) => {
-    if (settlementFilter === 'ALL') return true;
-    return s.type === settlementFilter;
-  });
-
-  // Separate river line networks and reservoir point features
-  const riverNetworks = WATERBODIES.filter((w) => w.type === 'RIVER' && w.coordinates);
-  const reservoirPoints = WATERBODIES.filter((w) => (w.type === 'RESERVOIR' || w.type === 'LAKE') && w.lat);
-
   return (
     <div className="space-y-4">
       
-      {/* Top Map Header & Controls */}
+      {/* Tactical Map Header & Controls */}
       <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         
         <div className="flex items-center space-x-3">
@@ -326,104 +300,29 @@ export const MapView = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 font-mono">
-              INSAT-3D Soundings • Political Boundaries • Hydrology, Transport & Settlements Base
+              Tactical Satellite Cartography • Real-Time Hydrology, Transport & Settlements
             </p>
           </div>
         </div>
 
-        {/* Layer Toggle Controls */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Clean Controls (State Boundaries Permanently Locked, Overlays integrated in satellite map) */}
+        <div className="flex flex-wrap items-center gap-2.5">
           
-          {/* Political Boundaries Toggle */}
-          <button
-            onClick={() => setShowPolitical(!showPolitical)}
-            className={`px-3 py-1.5 rounded text-xs font-medium border transition-all flex items-center space-x-1.5 ${
-              showPolitical
-                ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold shadow-xs'
-                : 'text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
-            title="Toggle Official Survey of India State Boundaries"
+          {/* Permanent State Boundaries Badge */}
+          <div 
+            className="px-3 py-1.5 rounded text-xs font-semibold bg-sky-50 text-sky-900 border border-sky-300 flex items-center space-x-1.5 shadow-xs"
+            title="Official Survey of India State Boundaries are permanently active"
           >
-            <Layers className="w-3.5 h-3.5 text-blue-700" />
-            <span>State Boundaries</span>
-          </button>
-
-          {/* Waterbodies & River Networks Toggle */}
-          <button
-            onClick={() => setShowWaterbodies(!showWaterbodies)}
-            className={`px-3 py-1.5 rounded text-xs font-medium border transition-all flex items-center space-x-1.5 ${
-              showWaterbodies
-                ? 'bg-sky-50 text-sky-900 border-sky-300 font-semibold shadow-xs'
-                : 'text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
-            title="Toggle Rivers, Drainage Channels & Reservoirs"
-          >
-            <Waves className="w-3.5 h-3.5 text-sky-600" />
-            <span>Waterbodies & Rivers ({WATERBODIES.length})</span>
-          </button>
-
-          {/* Transport Corridors Toggle */}
-          <button
-            onClick={() => setShowTransport(!showTransport)}
-            className={`px-3 py-1.5 rounded text-xs font-medium border transition-all flex items-center space-x-1.5 ${
-              showTransport
-                ? 'bg-amber-50 text-amber-900 border-amber-300 font-semibold shadow-xs'
-                : 'text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
-            title="Toggle National Highways & Evacuation Rail Corridors"
-          >
-            <Navigation className="w-3.5 h-3.5 text-amber-600" />
-            <span>Highways & Transport</span>
-          </button>
-
-          {/* Settlements (Cities, Towns, Villages) Toggle */}
-          <div className="inline-flex items-center rounded border border-slate-200 bg-white p-0.5 shadow-xs">
-            <button
-              onClick={() => setShowSettlements(!showSettlements)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 ${
-                showSettlements ? 'bg-indigo-50 text-indigo-900 font-semibold' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Settlements ({filteredSettlements.length})</span>
-            </button>
-
-            {showSettlements && (
-              <div className="flex items-center space-x-1 border-l border-slate-200 pl-1 ml-1 text-[11px]">
-                <button
-                  onClick={() => setSettlementFilter('ALL')}
-                  className={`px-1.5 py-0.5 rounded ${settlementFilter === 'ALL' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setSettlementFilter('CITY')}
-                  className={`px-1.5 py-0.5 rounded ${settlementFilter === 'CITY' ? 'bg-blue-600 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  Cities
-                </button>
-                <button
-                  onClick={() => setSettlementFilter('TOWN')}
-                  className={`px-1.5 py-0.5 rounded ${settlementFilter === 'TOWN' ? 'bg-amber-600 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  Towns
-                </button>
-                <button
-                  onClick={() => setSettlementFilter('VILLAGE')}
-                  className={`px-1.5 py-0.5 rounded ${settlementFilter === 'VILLAGE' ? 'bg-red-600 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  Villages
-                </button>
-              </div>
-            )}
+            <Layers className="w-3.5 h-3.5 text-sky-700" />
+            <span>State Boundaries (Locked)</span>
           </div>
 
           {/* Hazard Polygons Toggle */}
           <button
             onClick={() => setShowPolygons(!showPolygons)}
-            className={`px-3 py-1.5 rounded text-xs font-medium border transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold border transition-all ${
               showPolygons
-                ? 'bg-red-50 text-red-800 border-red-200 font-semibold shadow-xs'
+                ? 'bg-red-50 text-red-800 border-red-300 shadow-xs'
                 : 'text-slate-600 border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -433,250 +332,166 @@ export const MapView = () => {
           {/* Monitored Assets Toggle */}
           <button
             onClick={() => setShowAssets(!showAssets)}
-            className={`px-3 py-1.5 rounded text-xs font-medium border transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold border transition-all ${
               showAssets
-                ? 'bg-slate-100 text-slate-800 border-slate-300 font-semibold shadow-xs'
+                ? 'bg-slate-100 text-slate-800 border-slate-300 shadow-xs'
                 : 'text-slate-600 border-slate-200 hover:bg-slate-50'
             }`}
           >
             Critical Assets ({assets.length})
           </button>
 
+          {/* Tactical Hint */}
+          <div className="hidden xl:flex items-center space-x-1 px-2.5 py-1.5 rounded bg-slate-50 border border-slate-200 text-slate-500 text-[11px]">
+            <Info className="w-3.5 h-3.5 text-blue-600" />
+            <span>Click any city, river, or highway to inspect telemetry</span>
+          </div>
+
         </div>
 
       </div>
 
-      {/* Leaflet Map Container */}
-      <div className="w-full rounded-lg overflow-hidden border border-slate-200 shadow-sm relative bg-slate-950">
+      {/* Leaflet Map Container with Tactical Satellite Base */}
+      <div className="w-full rounded-lg overflow-hidden border border-slate-300 shadow-sm relative bg-slate-950">
         <MapContainer
           center={[26.5, 79.5]}
           zoom={5}
           minZoom={4}
           maxZoom={18}
           scrollWheelZoom={true}
-          style={{ width: '100%', height: '640px' }}
+          style={{ width: '100%', height: '650px' }}
         >
           <MapResizeHandler />
+          <MapClickInspector onSelect={setSelectedTacticalFeature} />
 
-          {/* Base Layer: High-Resolution Satellite Imagery (Pure Earth Topography) */}
+          {/* Tactical Satellite Base Layer: High-Resolution Imagery with Integrated Cartography (Settlements, Waterbodies, Roads, Railways) */}
           <TileLayer
-            attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={18}
+            attribution='&copy; Google Satellite Maps &bull; Tactical Cartography'
+            url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+            maxZoom={20}
           />
 
-          {/* Modes of Transport: Real-Time Roads, Highways & Street Networks Overlay */}
-          {showTransport && (
-            <TileLayer
-              attribution='Tiles &copy; Esri &mdash; Source: USGS, Esri, DeLorme'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
-              opacity={0.65}
-            />
-          )}
+          {/* Official Survey of India State & UT Political Boundaries Overlay (Permanently Active) */}
+          <GeoJSON
+            key="soi-states-layer"
+            data={indiaStatesGeoJson}
+            style={getStateStyle}
+            onEachFeature={onEachState}
+          />
 
-          {/* Official Survey of India State & UT Political Boundaries Overlay */}
-          {showPolitical && (
-            <GeoJSON
-              key="soi-states-layer"
-              data={indiaStatesGeoJson}
-              style={getStateStyle}
-              onEachFeature={onEachState}
-            />
-          )}
+          {/* Survey of India Bold National Boundary Outline */}
+          <GeoJSON
+            key="soi-national-boundary"
+            data={indiaNationalBorderGeoJson}
+            style={{
+              color: '#38bdf8',
+              weight: 2.2,
+              opacity: 0.95,
+              fillOpacity: 0
+            }}
+            interactive={false}
+          />
 
-          {/* Survey of India Bold National Boundary Outline of the Republic of India */}
-          {showPolitical && (
-            <GeoJSON
-              key="soi-national-boundary"
-              data={indiaNationalBorderGeoJson}
-              style={{
-                color: '#0f172a',
-                weight: 2.8,
-                opacity: 0.95,
-                fillOpacity: 0
-              }}
-              interactive={false}
-            />
-          )}
-
-          {/* Strategic Lifeline Highways & Evacuation Transit Corridors */}
-          {showTransport && TRANSPORT_CORRIDORS.map((corridor) => (
-            <Polyline
-              key={corridor.id}
-              positions={corridor.coordinates}
-              pathOptions={{
-                color: corridor.color || '#f97316',
-                weight: corridor.type === 'RAILWAY' ? 2.5 : 3.5,
-                dashArray: corridor.type === 'RAILWAY' ? '6, 6' : undefined,
-                opacity: 0.95
-              }}
+          {/* Interactive Feature Inspection Popup (Settlement, River, Lake, or Highway) */}
+          {selectedTacticalFeature && (
+            <Popup
+              position={selectedTacticalFeature.position}
+              onClose={() => setSelectedTacticalFeature(null)}
             >
-              <Tooltip sticky>
-                <div className="p-1 font-sans text-xs">
-                  <span className="font-bold text-slate-900">{corridor.name}</span>
-                  <p className="text-[10px] text-amber-700 font-semibold">{corridor.category}</p>
-                  <p className="text-[10px] text-slate-600 mt-0.5">Status: <strong>{corridor.status}</strong></p>
-                </div>
-              </Tooltip>
-              <Popup>
-                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
-                  <div className="flex items-center justify-between border-b pb-1">
-                    <h4 className="font-bold text-slate-900 text-sm">{corridor.name}</h4>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800">
-                      {corridor.type}
-                    </span>
-                  </div>
-                  <p className="text-slate-600">{corridor.description}</p>
-                  <div className="pt-1 mt-1 border-t flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500">Weather Risk:</span>
-                    <strong className="text-red-700">{corridor.status}</strong>
-                  </div>
-                </div>
-              </Popup>
-            </Polyline>
-          ))}
-
-          {/* Waterbodies: Major River Systems & Inundation Drainage Channels */}
-          {showWaterbodies && riverNetworks.map((river) => (
-            <Polyline
-              key={river.id}
-              positions={river.coordinates}
-              pathOptions={{
-                color: '#0ea5e9',
-                weight: 4,
-                opacity: 0.9
-              }}
-            >
-              <Tooltip sticky>
-                <div className="p-1 font-sans text-xs">
-                  <div className="flex items-center space-x-1 text-sky-900 font-bold">
-                    <span>🌊 {river.name}</span>
-                  </div>
-                  <p className="text-[10px] text-sky-700">{river.basin}</p>
-                  <p className="text-[10px] text-slate-600 mt-0.5">Flow: <strong className="text-sky-900">{river.flowRate}</strong></p>
-                </div>
-              </Tooltip>
-              <Popup>
-                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
-                  <div className="flex items-center justify-between border-b pb-1">
-                    <h4 className="font-bold text-sky-950 text-sm flex items-center space-x-1">
-                      <span>🌊 {river.name}</span>
-                    </h4>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-sky-100 text-sky-800">
-                      {river.status}
-                    </span>
-                  </div>
-                  <p className="text-slate-600">{river.description}</p>
-                  <div className="pt-1 mt-1 border-t space-y-0.5 text-[11px]">
-                    <p className="text-slate-600">Discharge / Flow: <strong className="text-sky-900">{river.flowRate}</strong></p>
-                    <p className="text-slate-600">Nowcasting Context: <strong className="text-red-700">{river.riskZoneRef}</strong></p>
-                  </div>
-                </div>
-              </Popup>
-            </Polyline>
-          ))}
-
-          {/* Waterbodies: Major Reservoirs & Natural Lakes */}
-          {showWaterbodies && reservoirPoints.map((lake) => (
-            <Marker
-              key={lake.id}
-              position={[lake.lat, lake.lon]}
-              icon={createWaterbodyIcon(lake)}
-            >
-              <Tooltip sticky>
-                <div className="font-inter text-xs">
-                  <span className="font-bold text-sky-950">{lake.name}</span>
-                  <span className="text-[10px] text-slate-500 ml-1">({lake.type})</span>
-                </div>
-              </Tooltip>
-              <Popup>
-                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
-                  <div className="flex items-center justify-between border-b pb-1">
-                    <h4 className="font-bold text-sky-950 text-sm">{lake.name}</h4>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-sky-100 text-sky-800 uppercase">
-                      {lake.type}
-                    </span>
-                  </div>
-                  <p className="text-slate-600">{lake.description}</p>
-                  <div className="pt-1 mt-1 border-t space-y-0.5 text-[11px]">
-                    <p className="text-slate-600">Basin: <strong className="text-slate-900">{lake.basin}</strong></p>
-                    {lake.storageMcm && <p className="text-slate-600">Gross Storage: <strong className="text-sky-900">{lake.storageMcm} MCM</strong></p>}
-                    <p className="text-slate-600">Flood Cushion Status: <strong className="text-emerald-700">{lake.status}</strong></p>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {/* Settlements: Cities, Towns, and Vulnerable Villages */}
-          {showSettlements && filteredSettlements.map((item) => (
-            <Marker
-              key={item.id}
-              position={[item.lat, item.lon]}
-              icon={createSettlementIcon(item)}
-            >
-              <Tooltip sticky>
-                <div className="font-inter text-xs space-y-0.5">
-                  <div className="flex items-center space-x-1">
-                    <span className="font-bold text-slate-900">{item.name}</span>
-                    <span className="text-[10px] text-slate-500 uppercase">({item.type})</span>
-                  </div>
-                  {item.elevation_m && (
-                    <div className="text-[10px] text-indigo-700 font-medium">
-                      {item.elevation_m}m ASL • {item.vulnerability}
-                    </div>
-                  )}
-                </div>
-              </Tooltip>
-              <Popup>
+              {selectedTacticalFeature.kind === 'SETTLEMENT' && (
                 <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
                   <div className="flex items-center justify-between border-b pb-1">
                     <div className="flex items-center space-x-1">
-                      {item.type === 'CITY' ? <Building2 className="w-3.5 h-3.5 text-blue-600" /> : <Home className="w-3.5 h-3.5 text-amber-600" />}
-                      <h4 className="font-bold text-slate-900 text-sm">{item.name}</h4>
+                      {selectedTacticalFeature.data.type === 'CITY' ? (
+                        <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                      ) : (
+                        <Home className="w-3.5 h-3.5 text-amber-600" />
+                      )}
+                      <h4 className="font-bold text-slate-900 text-sm">{selectedTacticalFeature.data.name}</h4>
                     </div>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                      item.type === 'CITY' ? 'bg-blue-100 text-blue-800' :
-                      item.type === 'TOWN' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                      selectedTacticalFeature.data.type === 'CITY' ? 'bg-blue-100 text-blue-800' :
+                      selectedTacticalFeature.data.type === 'TOWN' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {item.type}
+                      {selectedTacticalFeature.data.type}
                     </span>
                   </div>
 
                   <p className="text-slate-600">
-                    Location: <strong className="text-slate-900">{item.district ? `${item.district}, ` : ''}{item.state}</strong>
+                    Location: <strong className="text-slate-900">{selectedTacticalFeature.data.district ? `${selectedTacticalFeature.data.district}, ` : ''}{selectedTacticalFeature.data.state}</strong>
                   </p>
                   
-                  {item.elevation_m && (
+                  {selectedTacticalFeature.data.elevation_m && (
                     <p className="text-slate-600">
-                      Altitude: <strong className="text-indigo-800 font-mono">{item.elevation_m} meters ASL</strong>
+                      Altitude: <strong className="text-indigo-800 font-mono">{selectedTacticalFeature.data.elevation_m} meters ASL</strong>
                     </p>
                   )}
 
                   <p className="text-slate-600">
-                    Population: <strong className="text-slate-800">{item.population}</strong>
+                    Population: <strong className="text-slate-800">{selectedTacticalFeature.data.population}</strong>
                   </p>
 
                   <div className="pt-1.5 mt-1 border-t space-y-1 text-[11px]">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Vulnerability:</span>
                       <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
-                        {item.vulnerability}
+                        {selectedTacticalFeature.data.vulnerability}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Nowcasting Alert:</span>
                       <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-red-100 text-red-700">
-                        {item.nowcastingStatus}
+                        {selectedTacticalFeature.data.nowcastingStatus}
                       </span>
                     </div>
                   </div>
-
                 </div>
-              </Popup>
-            </Marker>
-          ))}
+              )}
+
+              {(selectedTacticalFeature.kind === 'RIVER' || selectedTacticalFeature.kind === 'WATERBODY') && (
+                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
+                  <div className="flex items-center justify-between border-b pb-1">
+                    <h4 className="font-bold text-sky-950 text-sm flex items-center space-x-1">
+                      <span>🌊 {selectedTacticalFeature.data.name}</span>
+                    </h4>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-sky-100 text-sky-800 uppercase">
+                      {selectedTacticalFeature.data.type}
+                    </span>
+                  </div>
+                  <p className="text-slate-600">{selectedTacticalFeature.data.description}</p>
+                  <div className="pt-1 mt-1 border-t space-y-0.5 text-[11px]">
+                    <p className="text-slate-600">Basin: <strong className="text-slate-900">{selectedTacticalFeature.data.basin}</strong></p>
+                    {selectedTacticalFeature.data.flowRate && (
+                      <p className="text-slate-600">Discharge / Flow: <strong className="text-sky-900">{selectedTacticalFeature.data.flowRate}</strong></p>
+                    )}
+                    {selectedTacticalFeature.data.storageMcm && (
+                      <p className="text-slate-600">Gross Storage: <strong className="text-sky-900">{selectedTacticalFeature.data.storageMcm} MCM</strong></p>
+                    )}
+                    <p className="text-slate-600">Status: <strong className="text-emerald-700">{selectedTacticalFeature.data.status}</strong></p>
+                    {selectedTacticalFeature.data.riskZoneRef && (
+                      <p className="text-slate-600">Nowcasting Context: <strong className="text-red-700">{selectedTacticalFeature.data.riskZoneRef}</strong></p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {selectedTacticalFeature.kind === 'TRANSPORT' && (
+                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
+                  <div className="flex items-center justify-between border-b pb-1">
+                    <h4 className="font-bold text-slate-900 text-sm">{selectedTacticalFeature.data.name}</h4>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800">
+                      {selectedTacticalFeature.data.type}
+                    </span>
+                  </div>
+                  <p className="text-slate-600">{selectedTacticalFeature.data.description}</p>
+                  <div className="pt-1 mt-1 border-t flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Weather Risk:</span>
+                    <strong className="text-red-700">{selectedTacticalFeature.data.status}</strong>
+                  </div>
+                </div>
+              )}
+            </Popup>
+          )}
 
           {/* Live Hazard Polygons & Satellite Radar Epicenters */}
           {showPolygons && riskZones.map((feature) => {
