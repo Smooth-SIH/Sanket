@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { setCurrentView } from '../../store/slices/authSlice';
-import { ShieldAlert, PhoneCall } from 'lucide-react';
+import { PhoneCall } from 'lucide-react';
 
 export const Footer = () => {
   const dispatch = useDispatch();
@@ -14,9 +14,11 @@ export const Footer = () => {
           
           <div className="max-w-xl space-y-3">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded bg-blue-900 flex items-center justify-center text-white">
-                <ShieldAlert className="w-5 h-5 text-amber-400" />
-              </div>
+              <img 
+                src="/sanket-logo.png" 
+                alt="SANKET Logo" 
+                className="w-8 h-8 object-contain rounded" 
+              />
               <span className="font-bold text-base text-white tracking-tight">SANKET</span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed">

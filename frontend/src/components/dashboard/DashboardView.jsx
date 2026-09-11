@@ -13,7 +13,6 @@ import {
 } from 'recharts';
 import { 
   AlertTriangle, 
-  ShieldAlert, 
   Activity, 
   Droplets, 
   Thermometer, 
@@ -147,10 +146,10 @@ export const DashboardView = () => {
       </div>
 
       {/* 2. Primary Hazard Assessment & Atmospheric Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Main Risk Status Card */}
-        <div className={`p-6 rounded-lg border shadow-sm flex flex-col justify-between ${
+        <div className={`lg:col-span-5 p-6 rounded-lg border shadow-sm flex flex-col justify-between ${
           isCritical 
             ? 'bg-red-50/70 border-red-200 text-red-950' 
             : isWarning 
@@ -160,12 +159,12 @@ export const DashboardView = () => {
             : 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
         }`}>
           <div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-xs font-bold tracking-wider uppercase flex items-center space-x-1.5 shrink-0 mr-3">
-                <AlertTriangle className="w-4 h-4" />
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-bold tracking-wider uppercase flex items-center space-x-1.5 shrink-0 text-slate-800">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                 <span>Primary Hazard Assessment</span>
               </span>
-              <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold border shrink-0 whitespace-nowrap ml-auto ${
+              <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold border shrink-0 whitespace-nowrap shadow-xs ${
                 isCritical
                   ? 'bg-red-600 text-white border-red-700'
                   : isWarning
@@ -206,7 +205,7 @@ export const DashboardView = () => {
         </div>
 
         {/* 6 Core Atmospheric Telemetry Metric Tiles */}
-        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-4">
           
           <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between text-slate-500 mb-2">

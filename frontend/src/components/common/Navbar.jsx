@@ -2,7 +2,6 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentView, logout } from '../../store/slices/authSlice';
 import { 
-  ShieldAlert, 
   LayoutDashboard, 
   Map, 
   Bell, 
@@ -42,9 +41,11 @@ export const Navbar = () => {
           className="flex items-center space-x-3 cursor-pointer group"
           title="Return to National Portal Overview"
         >
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-900 text-white font-bold shadow-sm">
-            <ShieldAlert className="w-6 h-6 text-amber-400" />
-          </div>
+          <img 
+            src="/sanket-logo.png" 
+            alt="SANKET Logo" 
+            className="w-10 h-10 object-contain rounded-lg shadow-xs" 
+          />
           <div>
             <span className="font-bold text-lg text-slate-900 tracking-tight">
               SANKET

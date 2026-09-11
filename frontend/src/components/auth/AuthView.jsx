@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess, setCurrentView } from '../../store/slices/authSlice';
 import { loginApi, registerApi } from '../../services/api';
 import { 
-  ShieldAlert, 
   Lock, 
   Mail, 
   User, 
@@ -126,9 +125,11 @@ export const AuthView = () => {
         {/* Security Header Banner */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8">
           <div className="flex items-center space-x-4 mb-6 pb-6 border-b border-slate-100">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-900 text-white shadow-sm shrink-0">
-              <ShieldAlert className="w-7 h-7 text-amber-400" />
-            </div>
+            <img 
+              src="/sanket-logo.png" 
+              alt="SANKET Logo" 
+              className="w-12 h-12 object-contain rounded-xl shadow-xs shrink-0" 
+            />
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-xl font-bold text-slate-900 tracking-tight">SANKET</h1>
