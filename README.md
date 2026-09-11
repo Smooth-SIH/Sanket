@@ -8,7 +8,7 @@
 
 ### Programming Languages
 
-- **JavaScript (ES2023 / Node.js)** — Full-stack application logic, asynchronous streams, API routes, and interactive UI component state.
+- **JavaScript (ES2023 / Node.js)** — Full-stack application logic, asynchronous streams, API and Auth routes, and interactive UI component state.
 - **Python 3.11** — Machine learning inference, mathematical atmospheric modeling, and SHAP explainability calculations.
 - **HTML5 & CSS3** — Canvas animations, glassmorphic layout tokens, and responsive design.
 
