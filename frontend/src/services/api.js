@@ -85,3 +85,25 @@ export const runNowcastPrediction = async (parameters) => {
   const res = await apiClient.post('/predict/nowcast', parameters);
   return res.data;
 };
+
+// Authentication & Personnel APIs
+export const loginApi = async (credentials) => {
+  const res = await apiClient.post('/auth/login', credentials);
+  return res.data;
+};
+
+export const registerApi = async (userData) => {
+  const res = await apiClient.post('/auth/register', userData);
+  return res.data;
+};
+
+export const getMeApi = async () => {
+  const res = await apiClient.get('/auth/me');
+  return res.data;
+};
+
+export const fetchRegisteredPersonnelApi = async () => {
+  const res = await apiClient.get('/auth/registered-personnel');
+  return res.data;
+};
+

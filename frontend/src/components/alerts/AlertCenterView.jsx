@@ -7,10 +7,22 @@ import { setAlerts, acknowledgeAlertInState } from '../../store/slices/alertSlic
 export const AlertCenterView = () => {
   const dispatch = useDispatch();
   const alerts = useSelector((state) => state.alerts.alerts);
+  const user = useSelector((state) => state.auth.user);
   const [selectedHazard, setSelectedHazard] = useState('ALL');
   const [selectedSeverity, setSelectedSeverity] = useState('ALL');
   const [ackModalAlert, setAckModalAlert] = useState(null);
-  const [officerNameInput, setOfficerNameInput] = useState('Duty Officer (SDMA)');
+  
+  const getOfficerIdentity = () => {
+    return user ? `${user.name} (${user.organization || user.role})` : 'Command Duty Officer (SEOC)';
+  };
+
+  const [officerNameInput, setOfficerNameInput] = useState(getOfficerIdentity());
+
+  useEffect(() => {
+    if (user) {
+      setOfficerNameInput(getOfficerIdentity());
+    }
+  }, [user]);
 
   useEffect(() => {
     const loadAlerts = async () => {
@@ -26,9 +38,10 @@ export const AlertCenterView = () => {
 
   const handleAcknowledge = async () => {
     if (!ackModalAlert) return;
+    const finalOfficer = officerNameInput.trim() || getOfficerIdentity();
     try {
-      await acknowledgeAlertApi(ackModalAlert.id, officerNameInput);
-      dispatch(acknowledgeAlertInState({ id: ackModalAlert.id, officerName: officerNameInput }));
+      await acknowledgeAlertApi(ackModalAlert.id, finalOfficer);
+      dispatch(acknowledgeAlertInState({ id: ackModalAlert.id, officerName: finalOfficer }));
       setAckModalAlert(null);
     } catch (err) {
       console.error('Acknowledgment error:', err);
@@ -209,8 +222,23 @@ export const AlertCenterView = () => {
               Logging official duty acknowledgment for Bulletin Ref <strong>{ackModalAlert.id}</strong> ({ackModalAlert.hazardType} in {ackModalAlert.affectedRegion}).
             </p>
 
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">Logged Official:</span>
+                <span className="font-bold text-slate-900">{user?.name || 'Authorized Officer'}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">Organization / Agency:</span>
+                <span className="text-blue-700 font-medium text-[11px] text-right truncate max-w-[220px]">
+                  {user?.organization || user?.role || 'State Operations Centre'}
+                </span>
+              </div>
+            </div>
+
             <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">Officer Name & SDMA Command Post</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                Official Signature / Dispatch Log Identity
+              </label>
               <input
                 type="text"
                 value={officerNameInput}

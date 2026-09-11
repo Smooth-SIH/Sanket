@@ -151,8 +151,17 @@ export const acknowledgeAlert = async (req, res) => {
   const alert = sampleAlerts.find(a => a.id === req.params.id);
   if (!alert) return res.status(404).json({ message: 'Alert not found' });
 
+  // Resolve official officer identity
+  let acknowledgingOfficer = req.body.officerName;
+  if (!acknowledgingOfficer && req.user) {
+    acknowledgingOfficer = `${req.user.name} (${req.user.organization || req.user.role})`;
+  }
+  if (!acknowledgingOfficer) {
+    acknowledgingOfficer = 'Command Center Duty Officer';
+  }
+
   alert.acknowledged = true;
-  alert.acknowledgedBy = req.body.officerName || 'Command Officer';
+  alert.acknowledgedBy = acknowledgingOfficer;
   alert.acknowledgedAt = new Date().toISOString();
 
   return res.json({

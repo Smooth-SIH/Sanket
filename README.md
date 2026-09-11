@@ -31,7 +31,7 @@
 
 ### Hardware & Data Infrastructure
 
-- **Satellite Payload Source**: ISRO MOSDAC INSAT-3D / INSAT-3DR 19-Channel Sounder & Imager Payload.
+- **Satellite Payload Source**: ISRO MOSDAC INSAT-3D / INSAT-3DR 19-Channel Sounder & Imager Payload. (Using only Sounder due to relevance to the project)
 - **Target Deployment Hardware**: Cloud Virtual Machines (Ubuntu/Linux), Edge Compute Nodes, and Multi-Core Operations Workstations.
 
 ---
