@@ -10,7 +10,6 @@ import {
   BarChart3, 
   Radio, 
   ArrowRight,
-  Home,
   PhoneCall,
   CheckCircle2,
   AlertCircle
@@ -103,15 +102,6 @@ export const Navbar = () => {
                 );
               })}
             </nav>
-
-            <button
-              onClick={() => dispatch(setCurrentView('landing'))}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-medium transition-colors"
-              title="Return to National Portal Overview"
-            >
-              <Home className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Portal Home</span>
-            </button>
           </div>
         )}
       </div>

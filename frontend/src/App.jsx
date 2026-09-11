@@ -57,8 +57,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-inter antialiased flex flex-col selection:bg-blue-700 selection:text-white">
-      {/* Official Government Emergency Advisory Ticker */}
-      <AlertBannerTicker activeAlert={activeCriticalAlert} />
+      {/* Official Government Emergency Advisory Ticker (Hidden on Home/Landing view) */}
+      {!isLanding && <AlertBannerTicker activeAlert={activeCriticalAlert} />}
       
       {/* Official National Portal Navigation Bar */}
       <Navbar />
