@@ -8,15 +8,20 @@ on:
 
 jobs:
   keep-alive:
-    name: Ping Render ML Service Health Endpoint
+    name: Ping Render ML Microservice
     runs-on: ubuntu-latest
     steps:
       - name: Send Robust HTTP Ping to Render ML Microservice
         run: |
           TARGET_URL="${{ secrets.RENDER_ML_SERVICE_URL }}"
           if [ -z "$TARGET_URL" ]; then
-            TARGET_URL="https://sanket-ml-service.onrender.com:10000/health"
+            TARGET_URL="https://sanket-ml-service.onrender.com"
           fi
+
+          # Strip any accidental internal port (:10000) or health path
+          TARGET_URL=$(echo "$TARGET_URL" | sed -E 's/:10000(\/.*)?$//')
+          TARGET_URL=$(echo "$TARGET_URL" | sed -E 's/\/health\/?$//')
+
           echo "Pinging Render ML Microservice URL: $TARGET_URL"
 
           # Use -sSL for follow redirects, --max-time 120 for Render cold start, and retries
@@ -27,12 +32,12 @@ jobs:
             --retry 3 \
             --retry-delay 5 \
             --retry-all-errors \
-            "$TARGET_URL")
+            "$TARGET_URL" || echo "000")
 
           echo "HTTP Response Status Code: $HTTP_STATUS"
           if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
-            echo "SUCCESS: ML Microservice is awake and operational."
+            echo "SUCCESS: ML Microservice is awake and operational (HTTP $HTTP_STATUS)."
           else
-            echo "WARNING: ML Microservice returned HTTP status $HTTP_STATUS"
+            echo "WARNING: ML Microservice returned unexpected HTTP status $HTTP_STATUS"
             exit 1
           fi

@@ -39,7 +39,7 @@ class NowcastRequest(BaseModel):
     k_index: Optional[float] = 39.0
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     """Service root endpoint."""
     return {

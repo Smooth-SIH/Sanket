@@ -36,15 +36,19 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 
-// System Status Endpoint
-app.get('/api/health', (req, res) => {
+// System Status & Health Check Endpoints (Handles root and health pings)
+const statusHandler = (req, res) => {
   res.json({
     status: 'OPERATIONAL',
     system: 'SANKET Weather Warning Backend API',
     version: '2.0.0',
     timestamp: new Date().toISOString()
   });
-});
+};
+
+app.get('/', statusHandler);
+app.get('/health', statusHandler);
+app.get('/api/health', statusHandler);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -87,8 +91,8 @@ server.listen(PORT, async () => {
     await fetchAndProcessSatelliteData();
 
     // Render Keep-Alive Auto-Ping (prevents 15-minute free tier sleep)
-    const backendUrl = process.env.RENDER_BACKEND_URL || 'https://sanket-backend-epo6.onrender.com/api/health';
-    const mlUrl = process.env.RENDER_ML_SERVICE_URL || 'https://sanket-ml-service.onrender.com/health';
+    const backendUrl = process.env.RENDER_BACKEND_URL || 'https://sanket-backend-epo6.onrender.com';
+    const mlUrl = process.env.RENDER_ML_SERVICE_URL || 'https://sanket-ml-service.onrender.com';
     
     try {
       if (typeof fetch !== 'undefined') {
