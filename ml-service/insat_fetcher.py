@@ -8,11 +8,17 @@ import os
 import datetime
 import math
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 from dotenv import load_dotenv
 import httpx
 import numpy as np
+
+try:
+    import h5py
+    HAS_H5PY = True
+except ImportError:
+    HAS_H5PY = False
 
 # Load environment variables from ml-service/.env or root .env
 env_path = Path(__file__).resolve().parent / ".env"
@@ -25,52 +31,54 @@ logging.basicConfig(level=logging.INFO)
 class MOSDACAdapter:
     """
     Adapter for ISRO MOSDAC (Meteorological and Oceanographic Satellite Data Archival Centre).
-    Handles authentication and downloads for INSAT-3D / INSAT-3DR L2B products.
+    Handles authentication, local HDF5 cache, and downloads for INSAT-3D / INSAT-3DR L2B products.
     """
 
-    def __init__(self, user: str = None, password: str = None, token: str = None):
+    def __init__(self, user: str = None, password: str = None, data_dir: Path = None):
         self.user = user or os.getenv("MOSDAC_USER")
         self.password = password or os.getenv("MOSDAC_PASSWORD")
-        self.token = token or os.getenv("MOSDAC_API_TOKEN")
         self.base_url = "https://mosdac.gov.in/live"
+        self.data_dir = data_dir or (Path(__file__).resolve().parent / os.getenv("MOSDAC_DATA_DIR", "../data/raw")).resolve()
 
     @property
     def is_configured(self) -> bool:
-        """Check if valid MOSDAC credentials or API tokens are present."""
-        return bool(
-            (self.user and self.user != "your_mosdac_email@example.com") or
-            (self.token and self.token != "your_mosdac_token_or_credentials")
-        )
+        """Check if valid MOSDAC credentials are present."""
+        return bool(self.user and self.user != "your_mosdac_email@example.com")
 
-    def fetch_satellite_granule(self, product: str = "L2B_HEM") -> Dict[str, Any]:
-        """
-        Placeholder adapter for MOSDAC automated HDF5/NetCDF download.
-        When credentials are provided, connects to MOSDAC server / OpenSearch.
-        """
-        if not self.is_configured:
-            return {"status": "UNCONFIGURED", "message": "Add MOSDAC credentials to ml-service/.env"}
-
-        # When MOSDAC credentials are active, query the open data portal
-        logger.info(f"[MOSDAC Adapter] Querying MOSDAC for product {product}")
-        return {
-            "status": "CONNECTED",
-            "satellite": "INSAT-3DR",
-            "product": product,
-            "timestamp": datetime.datetime.utcnow().isoformat()
-        }
+    def get_available_h5_files(self) -> List[Path]:
+        """Return list of downloaded MOSDAC HDF5 files sorted newest first."""
+        if not self.data_dir.exists():
+            # Check relative to cwd
+            alt = Path("data/raw").resolve()
+            if alt.exists():
+                self.data_dir = alt
+            else:
+                return []
+        files = list(self.data_dir.glob("*.h5"))
+        files.sort(key=lambda p: p.name, reverse=True)
+        return files
 
 
 class MOSDACInsatFetcher:
     """
     Live Satellite & Atmospheric Telemetry Ingestion Service for SANKET.
+    Ingests real ISRO INSAT-3DR Sounder Level-2B HDF5 products with live fallback.
     """
 
     def __init__(self):
-        self.satellite_id = "INSAT-3DR (MOSDAC / IMD Telemetry)"
-        self.sensor_type = "Sounder + Imager (19 Channels)"
+        self.satellite_id = "INSAT-3DR (ISRO MOSDAC Telemetry)"
+        self.sensor_type = "Sounder (19 Channels) + Imager"
         self.weather_api_key = os.getenv("WEATHER_API_KEY")
-        self.mosdac_adapter = MOSDACAdapter()
-        self.data_mode = os.getenv("DATA_SOURCE_MODE", "LIVE_AUTO")
+        self.data_mode = os.getenv("DATA_SOURCE_MODE", "MOSDAC")
+        
+        mosdac_dir_env = os.getenv("MOSDAC_DATA_DIR", "../data/raw")
+        self.data_dir = (Path(__file__).resolve().parent / mosdac_dir_env).resolve()
+        if not self.data_dir.exists():
+            alt = Path("data/raw").resolve()
+            if alt.exists():
+                self.data_dir = alt
+                
+        self.mosdac_adapter = MOSDACAdapter(data_dir=self.data_dir)
 
         # Monitored Regional Hotspots across India
         self.hotspot_locations = [
@@ -238,14 +246,140 @@ class MOSDACInsatFetcher:
             "cloud_cover_pct": round(cloud_pct, 1)
         }
 
-    def fetch_latest_scan(self) -> Dict[str, Any]:
+    def fetch_mosdac_hdf5_scan(self) -> Dict[str, Any]:
         """
-        Fetch live satellite scan metrics across all monitored regional hotspots.
+        Ingest and parse the latest Level-2B Sounder HDF5 file from ISRO MOSDAC.
+        Extracts real physical columns: totH2O (IWV), CTT, LI, and derives stability indices.
+        """
+        if not HAS_H5PY:
+            raise RuntimeError("h5py package is not installed.")
+
+        h5_files = self.mosdac_adapter.get_available_h5_files()
+        if not h5_files:
+            raise FileNotFoundError(f"No MOSDAC .h5 files found in {self.data_dir}")
+
+        latest_file = h5_files[0]
+        logger.info(f"[MOSDAC Ingestion] Parsing latest HDF5 satellite file: {latest_file.name}")
+
+        with h5py.File(latest_file, "r") as f:
+            lats = np.array(f["Latitude"][:], dtype=float) * 0.01
+            lons = np.array(f["Longitude"][:], dtype=float) * 0.01
+            tot = np.array(f["totH2O"][0], dtype=float)
+            ctt = np.array(f["CTT"][0], dtype=float)
+            li = np.array(f["LI"][0], dtype=float)
+
+        valid_coords = (lats > -90) & (lats < 90) & (lons > -180) & (lons < 180)
+        valid_tot = valid_coords & (tot > 0) & (tot < 150)
+        valid_ctt = valid_coords & (ctt > 150) & (ctt < 350)
+        valid_li = valid_coords & (li > -25) & (li < 25)
+
+        regional_hotspots = []
+        primary_metrics = None
+
+        for spot in self.hotspot_locations:
+            dist = (lats - spot["lat"]) ** 2 + (lons - spot["lon"]) ** 2
+
+            idx_tot = np.unravel_index(np.argmin(np.where(valid_tot, dist, np.inf)), lats.shape)
+            idx_ctt = np.unravel_index(np.argmin(np.where(valid_ctt, dist, np.inf)), lats.shape)
+            idx_li = np.unravel_index(np.argmin(np.where(valid_li, dist, np.inf)), lats.shape)
+
+            iwv = round(float(tot[idx_tot]), 1) if np.isfinite(tot[idx_tot]) and tot[idx_tot] > 0 else 45.0
+            ctt_val = round(float(ctt[idx_ctt]), 1) if np.isfinite(ctt[idx_ctt]) and ctt[idx_ctt] > 150 else 230.0
+            li_val = round(float(li[idx_li]), 2) if np.isfinite(li[idx_li]) else -1.5
+
+            # Atmospheric physics formulations
+            if li_val < 0:
+                cape = max(250.0, min(4800.0, -li_val * 460.0 + iwv * 12.0))
+            else:
+                cape = max(50.0, min(900.0, (8.0 - li_val) * 40.0 + iwv * 4.0))
+            cape = round(float(cape), 1)
+
+            cin = round(float(max(5.0, min(180.0, 15.0 + max(0.0, li_val) * 16.0))), 1)
+            k_idx = round(float(max(15.0, min(44.0, 26.0 - (li_val * 2.2) + (iwv * 0.2)))), 1)
+            humidity = round(float(max(45.0, min(98.0, 42.0 + iwv * 0.9))), 1)
+
+            # Rainfall rate estimation
+            if ctt_val < 220.0 and iwv > 40.0:
+                rain_rate = round(float(max(15.0, (220.0 - ctt_val) * 1.2 + (iwv - 45.0) * 0.7)), 2)
+            elif ctt_val < 240.0:
+                rain_rate = round(float(max(1.0, (240.0 - ctt_val) * 0.3)), 2)
+            else:
+                rain_rate = 0.0
+
+            wind_speed = round(float(max(15.0, min(95.0, 20.0 + math.sqrt(cape) * 0.9))), 1)
+
+            # Severe weather risk level evaluation
+            if iwv > 50.0 and ctt_val < 210.0 and cape > 1800.0:
+                risk_level = "CRITICAL"
+            elif iwv > 42.0 or cape > 1300.0 or ctt_val < 230.0:
+                risk_level = "WARNING"
+            elif iwv > 35.0 or cape > 700.0:
+                risk_level = "WATCH"
+            else:
+                risk_level = "NORMAL"
+
+            metrics = {
+                "IWV_mm": iwv,
+                "CTT_K": ctt_val,
+                "CTT_Celsius": round(ctt_val - 273.15, 1),
+                "CAPE_Jkg": cape,
+                "CIN_Jkg": cin,
+                "rain_rate_mmh": rain_rate,
+                "wind_speed_kmh": wind_speed,
+                "humidity_pct": humidity,
+                "lifted_index": li_val,
+                "k_index": k_idx,
+                "surface_temp_c": round(max(12.0, min(38.0, ctt_val - 210.0 + 22.0)), 1),
+                "cloud_cover_pct": round(float(min(100.0, max(10.0, (280.0 - ctt_val) * 1.2))), 1)
+            }
+
+            if primary_metrics is None:
+                primary_metrics = metrics
+
+            regional_hotspots.append({
+                "region": spot["region"],
+                "lat": spot["lat"],
+                "lon": spot["lon"],
+                "iwv": iwv,
+                "ctt": ctt_val,
+                "risk": risk_level,
+                "temp_c": metrics["surface_temp_c"],
+                "rain_rate": rain_rate
+            })
+
+        # Parse timestamp from filename (e.g., 3RSND_11SEP2026_1500_L2B_SA1_V01R00.h5)
+        file_ts = datetime.datetime.utcnow().isoformat() + "Z"
+        try:
+            parts = latest_file.stem.split("_")
+            if len(parts) >= 3:
+                date_str = parts[1]  # 11SEP2026
+                time_str = parts[2]  # 1500
+                dt = datetime.datetime.strptime(f"{date_str}_{time_str}", "%d%b%Y_%H%M")
+                file_ts = dt.isoformat() + "Z"
+        except Exception:
+            pass
+
+        return {
+            "scan_id": f"MOSDAC_HDF5_{latest_file.stem}",
+            "timestamp": file_ts,
+            "satellite": "INSAT-3DR (ISRO MOSDAC Sounder Level-2B)",
+            "sensor": "19-Channel Sounder (SA1 Sector)",
+            "status": "ONLINE",
+            "data_source": "MOSDAC_INSAT3DR_HDF5",
+            "source_file": latest_file.name,
+            "is_fallback": False,
+            "mosdac_adapter_status": "CONNECTED_LOCAL_HDF5",
+            "summary_metrics": primary_metrics,
+            "regional_hotspots": regional_hotspots
+        }
+
+    def fetch_live_api_scan(self) -> Dict[str, Any]:
+        """
+        Fetch live satellite scan metrics from OpenWeatherMap + Open-Meteo sounding models.
         """
         now = datetime.datetime.utcnow()
         scan_id = f"MOSDAC_LIVE_{now.strftime('%Y%m%d_%H%M%S')}"
 
-        # Fetch live metrics for primary hotspot (Garhwal, Himalayas)
         primary_metrics = None
         regional_hotspots: List[Dict[str, Any]] = []
 
@@ -255,7 +389,6 @@ class MOSDACInsatFetcher:
                 if primary_metrics is None:
                     primary_metrics = metrics
 
-                # Determine risk level based on live physics
                 iwv = metrics["IWV_mm"]
                 cape = metrics["CAPE_Jkg"]
                 ctt = metrics["CTT_K"]
@@ -282,7 +415,6 @@ class MOSDACInsatFetcher:
             except Exception as e:
                 logger.error(f"[Live Fetcher] Error fetching {spot['region']}: {e}")
 
-        # Fallback if network completely blocked
         if not primary_metrics:
             logger.warning("[Live Fetcher] Network offline: using fallback atmospheric baseline")
             primary_metrics = {
@@ -324,6 +456,100 @@ class MOSDACInsatFetcher:
             },
             "regional_hotspots": regional_hotspots
         }
+
+    def fetch_simulated_scan(self) -> Dict[str, Any]:
+        """
+        Pure simulated fallback scan generator.
+        Executes without any network requests or external dependencies, ensuring 100% uptime.
+        """
+        now = datetime.datetime.utcnow()
+        scan_id = f"MOSDAC_SIM_{now.strftime('%Y%m%d_%H%M%S')}"
+
+        primary_metrics = None
+        regional_hotspots: List[Dict[str, Any]] = []
+
+        for spot in self.hotspot_locations:
+            metrics = self._generate_mock_fallback(spot["lat"], spot["lon"])
+            if primary_metrics is None:
+                primary_metrics = metrics
+
+            iwv = metrics["IWV_mm"]
+            cape = metrics["CAPE_Jkg"]
+            ctt = metrics["CTT_K"]
+
+            if iwv > 52 and ctt < 220 and cape > 2000:
+                risk_level = "CRITICAL"
+            elif iwv > 45 or cape > 1500 or ctt < 235:
+                risk_level = "WARNING"
+            elif iwv > 38 or cape > 800:
+                risk_level = "WATCH"
+            else:
+                risk_level = "NORMAL"
+
+            regional_hotspots.append({
+                "region": spot["region"],
+                "lat": spot["lat"],
+                "lon": spot["lon"],
+                "iwv": iwv,
+                "ctt": ctt,
+                "risk": risk_level,
+                "temp_c": metrics.get("surface_temp_c"),
+                "rain_rate": metrics.get("rain_rate_mmh"),
+                "is_fallback": True
+            })
+
+        return {
+            "scan_id": scan_id,
+            "timestamp": now.isoformat() + "Z",
+            "satellite": "INSAT-3DR (Atmospheric Simulation Engine)",
+            "sensor": "Sounder Simulation (19 Channels)",
+            "status": "ONLINE",
+            "data_source": "SIMULATED_MOCK_FALLBACK",
+            "is_fallback": True,
+            "fallback_reason": "MOSDAC / Live APIs offline or mode set to SIMULATED",
+            "mosdac_adapter_status": "FALLBACK_SIMULATED",
+            "summary_metrics": {
+                "IWV_mm": primary_metrics["IWV_mm"],
+                "CTT_K": primary_metrics["CTT_K"],
+                "CTT_Celsius": primary_metrics["CTT_Celsius"],
+                "CAPE_Jkg": primary_metrics["CAPE_Jkg"],
+                "CIN_Jkg": primary_metrics["CIN_Jkg"],
+                "rain_rate_mmh": primary_metrics["rain_rate_mmh"],
+                "wind_speed_kmh": primary_metrics["wind_speed_kmh"],
+                "humidity_pct": primary_metrics["humidity_pct"],
+                "lifted_index": primary_metrics["lifted_index"],
+                "k_index": primary_metrics["k_index"]
+            },
+            "regional_hotspots": regional_hotspots
+        }
+
+    def fetch_latest_scan(self) -> Dict[str, Any]:
+        """
+        Fetch latest satellite scan metrics across all monitored regional hotspots.
+        Follows a bulletproof 3-tier cascade:
+          1. Tier 1: MOSDAC Real HDF5 (if mode is MOSDAC and files are available)
+          2. Tier 2: LIVE_AUTO (OpenWeatherMap + Open-Meteo sounding APIs)
+          3. Tier 3: SIMULATED (deterministic mathematical convective atmospheric simulation)
+        Guaranteed to never fail or raise an unhandled exception.
+        """
+        mode = (self.data_mode or "MOSDAC").upper()
+
+        # Tier 1: Try MOSDAC HDF5 Ingestion
+        if mode == "MOSDAC":
+            try:
+                return self.fetch_mosdac_hdf5_scan()
+            except Exception as e:
+                logger.warning(f"[Ingestion Cascade] MOSDAC HDF5 ingestion unavailable ({e}). Falling back to Tier 2: LIVE_AUTO.")
+
+        # Tier 2: Try Live APIs (OpenWeatherMap + Open-Meteo)
+        if mode in ("MOSDAC", "LIVE_AUTO"):
+            try:
+                return self.fetch_live_api_scan()
+            except Exception as e:
+                logger.warning(f"[Ingestion Cascade] LIVE_AUTO APIs failed ({e}). Falling back to Tier 3: SIMULATED.")
+
+        # Tier 3: Deterministic Physics-based Simulation
+        return self.fetch_simulated_scan()
 
 
 insat_fetcher = MOSDACInsatFetcher()
