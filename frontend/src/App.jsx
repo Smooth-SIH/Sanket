@@ -93,7 +93,7 @@ export default function App() {
       {!isLanding && (
         <footer className="bg-slate-900 text-slate-400 py-5 border-t border-slate-800 text-xs mt-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-            <p>2026 Smooth. All Rights Reserved.</p>
+            <p>&copy; 2026 Smooth. All Rights Reserved.</p>
           </div>
         </footer>
       )}

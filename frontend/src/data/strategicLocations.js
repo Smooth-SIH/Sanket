@@ -146,5 +146,73 @@ export const STRATEGIC_LOCATIONS = [
     type: 'NATIONAL_CAPITAL',
     align: 'right',
     description: 'National Capital of India • IMD / MoES HQ'
+  },
+
+  // --- India Meteorological Department (IMD) Regional Meteorological Centres (RMCs) ---
+  {
+    id: 'rmc-new-delhi',
+    name: 'RMC New Delhi',
+    region: 'Delhi (NCT), India',
+    lat: 28.5562,
+    lon: 77.0860,
+    type: 'RMC',
+    align: 'top',
+    address: 'Terminal 2, IGI Airport, New Delhi 110037',
+    description: 'Regional Meteorological Centre, New Delhi • Aviation & Northwest India Forecasting Command'
+  },
+  {
+    id: 'rmc-mumbai',
+    name: 'RMC Mumbai',
+    region: 'Maharashtra, India',
+    lat: 18.8953,
+    lon: 72.8139,
+    type: 'RMC',
+    align: 'left',
+    address: 'Near R. C. Church, Next to Ashwini Naval Hospital, Nananbhai Moosai Marg, Navy Nagar, Colaba, Mumbai 400005',
+    description: 'Regional Meteorological Centre, Mumbai • Western Region & Arabian Sea Cyclone Warning Centre (CWC)'
+  },
+  {
+    id: 'rmc-chennai',
+    name: 'RMC Chennai',
+    region: 'Tamil Nadu, India',
+    lat: 13.0645,
+    lon: 80.2452,
+    type: 'RMC',
+    align: 'right',
+    address: '50 (New No. 6) College Road, Nungambakkam, Chennai 600006',
+    description: 'Regional Meteorological Centre, Chennai • Southern Peninsula & Bay of Bengal Cyclone Warning Centre (ACWC)'
+  },
+  {
+    id: 'rmc-kolkata',
+    name: 'RMC Kolkata',
+    region: 'West Bengal, India',
+    lat: 22.5354,
+    lon: 88.3292,
+    type: 'RMC',
+    align: 'right',
+    address: '4, Duel Avenue, Alipore, Kolkata 700027',
+    description: 'Regional Meteorological Centre, Kolkata • Eastern Region & Area Cyclone Warning Centre (ACWC)'
+  },
+  {
+    id: 'rmc-nagpur',
+    name: 'RMC Nagpur',
+    region: 'Maharashtra, India',
+    lat: 21.0922,
+    lon: 79.0617,
+    type: 'RMC',
+    align: 'bottom',
+    address: 'Sonegaon Airport, Nagpur 440005',
+    description: 'Regional Meteorological Centre, Nagpur • Central India Atmospheric & Radar Operations Node'
+  },
+  {
+    id: 'rmc-guwahati',
+    name: 'RMC Guwahati',
+    region: 'Assam, India',
+    lat: 26.1061,
+    lon: 91.5859,
+    type: 'RMC',
+    align: 'top',
+    address: 'LGB International Airport, Borjhar, Guwahati, Assam 781015',
+    description: 'Regional Meteorological Centre, Guwahati • Northeast Frontier Weather & Flood Meteorological Office'
   }
 ];

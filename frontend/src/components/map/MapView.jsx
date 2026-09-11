@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, GeoJSON, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -27,110 +27,34 @@ import { WATERBODIES } from '../../data/waterbodies';
 import { SETTLEMENTS } from '../../data/settlements';
 import { TRANSPORT_CORRIDORS } from '../../data/transportCorridors';
 
-// Leaflet Map Resize Helper Component
-const MapResizeHandler = () => {
+// Geospatial Intelligence, Elevation Models, and Feature Resolvers
+import {
+  getDistanceKm,
+  pointInPolygon,
+  findStateForPoint,
+  estimateElevationASL,
+  getVulnerabilityForTerrain,
+  computeLocalTelemetry,
+  findClosestTacticalFeature
+} from '../../utils/geoSpatialIntelligence';
+
+// Leaflet Map Resize & Universal Click Bridge
+const MapEventBridge = ({ onMapReady, onInspect }) => {
   const map = useMap();
   useEffect(() => {
+    onMapReady(map);
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 200);
     return () => clearTimeout(timer);
-  }, [map]);
-  return null;
-};
+  }, [map, onMapReady]);
 
-// Geodesic distance calculation in kilometers
-function getDistanceKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// Find closest tactical feature (settlement, river, lake/reservoir, or transport corridor) to click location
-function findClosestTacticalFeature(clickLat, clickLng) {
-  let closest = null;
-  let minDistance = 45; // 45 km click radius tolerance
-
-  // 1. Check Settlements (Cities, Towns, High-Risk Villages)
-  for (const s of SETTLEMENTS) {
-    const dist = getDistanceKm(clickLat, clickLng, s.lat, s.lon);
-    if (dist < minDistance) {
-      minDistance = dist;
-      closest = {
-        kind: 'SETTLEMENT',
-        data: s,
-        position: [s.lat, s.lon],
-        distance: dist
-      };
-    }
-  }
-
-  // 2. Check Waterbodies (Lakes, Reservoirs, Rivers)
-  for (const w of WATERBODIES) {
-    if (w.lat && w.lon) {
-      const dist = getDistanceKm(clickLat, clickLng, w.lat, w.lon);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closest = {
-          kind: 'WATERBODY',
-          data: w,
-          position: [w.lat, w.lon],
-          distance: dist
-        };
-      }
-    } else if (w.coordinates) {
-      for (const pt of w.coordinates) {
-        const dist = getDistanceKm(clickLat, clickLng, pt[0], pt[1]);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closest = {
-            kind: 'RIVER',
-            data: w,
-            position: [pt[0], pt[1]],
-            distance: dist
-          };
-        }
-      }
-    }
-  }
-
-  // 3. Check Transport Corridors (Highways, Rail Lines)
-  for (const t of TRANSPORT_CORRIDORS) {
-    if (t.coordinates) {
-      for (const pt of t.coordinates) {
-        const dist = getDistanceKm(clickLat, clickLng, pt[0], pt[1]);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closest = {
-            kind: 'TRANSPORT',
-            data: t,
-            position: [pt[0], pt[1]],
-            distance: dist
-          };
-        }
-      }
-    }
-  }
-
-  return closest;
-}
-
-// Click listener inside map container
-const MapClickInspector = ({ onSelect }) => {
   useMapEvents({
     click(e) {
-      const { lat, lng } = e.latlng;
-      const match = findClosestTacticalFeature(lat, lng);
-      if (match) {
-        onSelect(match);
-      }
+      onInspect(e.latlng.lat, e.latlng.lng);
     }
   });
+
   return null;
 };
 
@@ -172,6 +96,12 @@ export const MapView = () => {
   const [showPolygons, setShowPolygons] = useState(true);
   const [showAssets, setShowAssets] = useState(true);
   const [selectedTacticalFeature, setSelectedTacticalFeature] = useState(null);
+  const [mapInstance, setMapInstance] = useState(null);
+  const selectedTacticalFeatureRef = useRef(null);
+
+  useEffect(() => {
+    selectedTacticalFeatureRef.current = selectedTacticalFeature;
+  }, [selectedTacticalFeature]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -209,6 +139,124 @@ export const MapView = () => {
     label: 'LIVE SCAN (18:50 UTC)',
     metrics: { IWV_mm: 58.4, CTT_K: 210.5, CAPE_Jkg: 2450 },
     maxRiskScore: 68
+  };
+
+  // Universal Inspection Handler for clicks anywhere across India
+  const handleInspectCoordinates = async (clickLat, clickLng) => {
+    // 1. Immediately close any open tooltips so they don't linger under popup
+    if (mapInstance) {
+      mapInstance.eachLayer((layer) => {
+        if (typeof layer.closeTooltip === 'function') {
+          layer.closeTooltip();
+        }
+      });
+    }
+
+    // 2. Check curated tactical features with strict tight thresholds
+    const curatedMatch = findClosestTacticalFeature(clickLat, clickLng);
+    if (curatedMatch) {
+      setSelectedTacticalFeature({
+        ...curatedMatch,
+        position: [clickLat, clickLng] // always anchor directly at click location!
+      });
+      return;
+    }
+
+    // 3. Universal Map Point Resolution for ANY location clicked in India
+    const detectedState = findStateForPoint(clickLat, clickLng, indiaStatesGeoJson) || 'India';
+    const elevation = estimateElevationASL(clickLat, clickLng);
+
+    // Check if inside or near any active risk zone
+    let activeRiskZone = null;
+    for (const zone of riskZones) {
+      if (zone.geometry?.coordinates?.[0]) {
+        if (pointInPolygon([clickLng, clickLat], zone.geometry.coordinates[0])) {
+          activeRiskZone = zone.properties;
+          break;
+        }
+      }
+      if (zone.properties?.center) {
+        const dist = getDistanceKm(clickLat, clickLng, zone.properties.center[1], zone.properties.center[0]);
+        if (dist < 35) {
+          activeRiskZone = zone.properties;
+        }
+      }
+    }
+
+    const localizedTelemetry = computeLocalTelemetry(clickLat, clickLng, activeRiskZone, activeFrame);
+    const vulnerability = getVulnerabilityForTerrain(clickLat, clickLng, elevation);
+
+    // Initial universal feature with instant state & telemetry
+    const initialFeature = {
+      kind: 'UNIVERSAL_LOCATION',
+      data: {
+        name: `${detectedState} Sector`,
+        type: 'LOCALITY',
+        state: detectedState,
+        district: `${detectedState} Region`,
+        coordinates: `${clickLat.toFixed(4)}° N, ${clickLng.toFixed(4)}° E`,
+        elevation_m: elevation,
+        vulnerability: vulnerability,
+        nowcastingStatus: activeRiskZone ? `${activeRiskZone.severity}_ALERT` : 'NORMAL',
+        telemetry: localizedTelemetry,
+        riskZone: activeRiskZone
+      },
+      position: [clickLat, clickLng],
+      isLoadingName: true
+    };
+
+    setSelectedTacticalFeature(initialFeature);
+
+    // 4. Asynchronously fetch exact village / town / district name from OpenStreetMap Nominatim
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${clickLat}&lon=${clickLng}&format=json&zoom=14&addressdetails=1`,
+        {
+          headers: { 'Accept-Language': 'en' },
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const geo = await res.json();
+        if (geo && geo.address) {
+          const addr = geo.address;
+          const placeName = addr.village || addr.town || addr.city || addr.suburb || addr.hamlet || addr.neighbourhood || addr.county || addr.state_district || geo.name || `${detectedState} Sector`;
+          const placeType = addr.city ? 'CITY' : addr.town ? 'TOWN' : (addr.village || addr.hamlet) ? 'VILLAGE' : 'LOCALITY';
+          const districtName = addr.state_district || addr.county || addr.district || '';
+          const stateName = addr.state || detectedState;
+
+          setSelectedTacticalFeature((prev) => {
+            if (!prev || prev.position[0] !== clickLat || prev.position[1] !== clickLng) {
+              return prev; // User clicked another location
+            }
+            return {
+              ...prev,
+              isLoadingName: false,
+              data: {
+                ...prev.data,
+                name: placeName,
+                type: placeType,
+                district: districtName,
+                state: stateName
+              }
+            };
+          });
+        }
+      }
+    } catch (err) {
+      // Graceful fallback: clear loading indicator
+      setSelectedTacticalFeature((prev) => {
+        if (!prev || prev.position[0] !== clickLat || prev.position[1] !== clickLng) return prev;
+        return {
+          ...prev,
+          isLoadingName: false
+        };
+      });
+    }
   };
 
   // State Boundary Style over Tactical Satellite Imagery
@@ -256,12 +304,18 @@ export const MapView = () => {
   const onEachState = (feature, layer) => {
     const name = feature.properties?.st_nm || 'Indian State';
     layer.on({
+      click: (e) => {
+        layer.closeTooltip();
+        handleInspectCoordinates(e.latlng.lat, e.latlng.lng);
+      },
       mouseover: (e) => {
+        // Prevent state boundary tooltip if user is inspecting a location popup
+        if (selectedTacticalFeatureRef.current) return;
         const target = e.target;
         target.setStyle({
-          weight: 2.4,
+          weight: 2.2,
           color: '#ffffff',
-          fillOpacity: 0.15
+          fillOpacity: 0.12
         });
         target.bringToFront();
       },
@@ -352,7 +406,7 @@ export const MapView = () => {
       </div>
 
       {/* Leaflet Map Container with Tactical Satellite Base */}
-      <div className="w-full rounded-lg overflow-hidden border border-slate-300 shadow-sm relative bg-slate-950">
+      <div className={`w-full rounded-lg overflow-hidden border border-slate-300 shadow-sm relative bg-slate-950 ${selectedTacticalFeature ? 'has-active-inspection' : ''}`}>
         <MapContainer
           center={[26.5, 79.5]}
           zoom={5}
@@ -361,8 +415,7 @@ export const MapView = () => {
           scrollWheelZoom={true}
           style={{ width: '100%', height: '650px' }}
         >
-          <MapResizeHandler />
-          <MapClickInspector onSelect={setSelectedTacticalFeature} />
+          <MapEventBridge onMapReady={setMapInstance} onInspect={handleInspectCoordinates} />
 
           {/* Tactical Satellite Base Layer: High-Resolution Imagery with Integrated Cartography (Settlements, Waterbodies, Roads, Railways) */}
           <TileLayer
@@ -392,46 +445,102 @@ export const MapView = () => {
             interactive={false}
           />
 
-          {/* Interactive Feature Inspection Popup (Settlement, River, Lake, or Highway) */}
+          {/* Interactive Feature Inspection Popup (Settlement, Universal Locality, River, Lake, or Highway) */}
           {selectedTacticalFeature && (
             <Popup
               position={selectedTacticalFeature.position}
               onClose={() => setSelectedTacticalFeature(null)}
             >
-              {selectedTacticalFeature.kind === 'SETTLEMENT' && (
-                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
+              {(selectedTacticalFeature.kind === 'SETTLEMENT' || selectedTacticalFeature.kind === 'UNIVERSAL_LOCATION') && (
+                <div className="p-1 font-inter text-xs space-y-1.5 max-w-xs min-w-[240px]">
                   <div className="flex items-center justify-between border-b pb-1">
-                    <div className="flex items-center space-x-1">
-                      {selectedTacticalFeature.data.type === 'CITY' ? (
-                        <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                    <div className="flex items-center space-x-1.5 truncate mr-2">
+                      {selectedTacticalFeature.data.type === 'RMC' ? (
+                        <Radio className="w-4 h-4 text-purple-600 shrink-0" />
+                      ) : selectedTacticalFeature.data.type === 'CITY' ? (
+                        <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                      ) : selectedTacticalFeature.data.type === 'TOWN' || selectedTacticalFeature.data.type === 'VILLAGE' ? (
+                        <Home className="w-4 h-4 text-amber-600 shrink-0" />
                       ) : (
-                        <Home className="w-3.5 h-3.5 text-amber-600" />
+                        <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
                       )}
-                      <h4 className="font-bold text-slate-900 text-sm">{selectedTacticalFeature.data.name}</h4>
+                      <h4 className="font-bold text-slate-900 text-sm truncate" title={selectedTacticalFeature.data.name}>
+                        {selectedTacticalFeature.data.name}
+                      </h4>
+                      {selectedTacticalFeature.isLoadingName && (
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping shrink-0" title="Resolving localized place..." />
+                      )}
                     </div>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase shrink-0 ${
+                      selectedTacticalFeature.data.type === 'RMC' ? 'bg-purple-100 text-purple-800 border border-purple-300' :
                       selectedTacticalFeature.data.type === 'CITY' ? 'bg-blue-100 text-blue-800' :
-                      selectedTacticalFeature.data.type === 'TOWN' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                      selectedTacticalFeature.data.type === 'TOWN' ? 'bg-amber-100 text-amber-800' :
+                      selectedTacticalFeature.data.type === 'VILLAGE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
                     }`}>
                       {selectedTacticalFeature.data.type}
                     </span>
                   </div>
 
                   <p className="text-slate-600">
-                    Location: <strong className="text-slate-900">{selectedTacticalFeature.data.district ? `${selectedTacticalFeature.data.district}, ` : ''}{selectedTacticalFeature.data.state}</strong>
+                    Location: <strong className="text-slate-900">
+                      {selectedTacticalFeature.data.district ? `${selectedTacticalFeature.data.district}, ` : ''}
+                      {selectedTacticalFeature.data.state}
+                    </strong>
                   </p>
-                  
-                  {selectedTacticalFeature.data.elevation_m && (
-                    <p className="text-slate-600">
-                      Altitude: <strong className="text-indigo-800 font-mono">{selectedTacticalFeature.data.elevation_m} meters ASL</strong>
-                    </p>
+
+                  {selectedTacticalFeature.data.address && (
+                    <div className="p-1.5 rounded bg-purple-50/70 border border-purple-200/80 text-[11px] text-purple-950">
+                      <span className="font-bold block text-[10px] text-purple-900 uppercase">IMD Official Headquarters:</span>
+                      <span className="leading-snug">{selectedTacticalFeature.data.address}</span>
+                    </div>
                   )}
 
-                  <p className="text-slate-600">
-                    Population: <strong className="text-slate-800">{selectedTacticalFeature.data.population}</strong>
-                  </p>
+                  <div className="flex items-center justify-between text-slate-500 font-mono text-[10px]">
+                    <span>Coordinates:</span>
+                    <span className="font-semibold text-slate-700">
+                      {selectedTacticalFeature.data.coordinates || `${selectedTacticalFeature.position[0].toFixed(4)}° N, ${selectedTacticalFeature.position[1].toFixed(4)}° E`}
+                    </span>
+                  </div>
 
-                  <div className="pt-1.5 mt-1 border-t space-y-1 text-[11px]">
+                  {selectedTacticalFeature.data.elevation_m !== undefined && (
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>Altitude:</span>
+                      <strong className="text-indigo-800 font-mono">{selectedTacticalFeature.data.elevation_m} meters ASL</strong>
+                    </div>
+                  )}
+
+                  {selectedTacticalFeature.data.population && (
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>Population:</span>
+                      <strong className="text-slate-800">{selectedTacticalFeature.data.population}</strong>
+                    </div>
+                  )}
+
+                  {/* Satellite Sounder Telemetry */}
+                  {selectedTacticalFeature.data.telemetry && (
+                    <div className="pt-1.5 mt-1 border-t space-y-1 bg-slate-50 p-2 rounded border border-slate-200/80">
+                      <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                        <span>Satellite Sounder (INSAT-3DR)</span>
+                        <span className="text-[9px] text-blue-700 font-mono">18:50 UTC</span>
+                      </p>
+                      <div className="grid grid-cols-3 gap-1 text-center pt-0.5 font-mono text-[10px]">
+                        <div className="bg-white p-1 rounded border border-slate-200">
+                          <span className="block text-[9px] text-slate-400">IWV</span>
+                          <strong className="text-blue-700">{selectedTacticalFeature.data.telemetry.iwv}mm</strong>
+                        </div>
+                        <div className="bg-white p-1 rounded border border-slate-200">
+                          <span className="block text-[9px] text-slate-400">CTT</span>
+                          <strong className="text-slate-800">{selectedTacticalFeature.data.telemetry.ctt}K</strong>
+                        </div>
+                        <div className="bg-white p-1 rounded border border-slate-200">
+                          <span className="block text-[9px] text-slate-400">CAPE</span>
+                          <strong className="text-amber-700">{selectedTacticalFeature.data.telemetry.cape}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-1 border-t space-y-1 text-[11px]">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Vulnerability:</span>
                       <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
@@ -440,8 +549,14 @@ export const MapView = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Nowcasting Alert:</span>
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-red-100 text-red-700">
-                        {selectedTacticalFeature.data.nowcastingStatus}
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                        selectedTacticalFeature.data.nowcastingStatus?.includes('CRITICAL') || selectedTacticalFeature.data.nowcastingStatus?.includes('EVACUATION') || selectedTacticalFeature.data.nowcastingStatus?.includes('HIGH')
+                          ? 'bg-red-100 text-red-700'
+                          : selectedTacticalFeature.data.nowcastingStatus?.includes('WARNING') || selectedTacticalFeature.data.nowcastingStatus?.includes('WATCH')
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {selectedTacticalFeature.data.nowcastingStatus || 'NORMAL'}
                       </span>
                     </div>
                   </div>
@@ -449,7 +564,7 @@ export const MapView = () => {
               )}
 
               {(selectedTacticalFeature.kind === 'RIVER' || selectedTacticalFeature.kind === 'WATERBODY') && (
-                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
+                <div className="p-1 font-inter text-xs space-y-1 max-w-xs min-w-[240px]">
                   <div className="flex items-center justify-between border-b pb-1">
                     <h4 className="font-bold text-sky-950 text-sm flex items-center space-x-1">
                       <span>🌊 {selectedTacticalFeature.data.name}</span>
@@ -476,7 +591,7 @@ export const MapView = () => {
               )}
 
               {selectedTacticalFeature.kind === 'TRANSPORT' && (
-                <div className="p-1 font-inter text-xs space-y-1 max-w-xs">
+                <div className="p-1 font-inter text-xs space-y-1 max-w-xs min-w-[240px]">
                   <div className="flex items-center justify-between border-b pb-1">
                     <h4 className="font-bold text-slate-900 text-sm">{selectedTacticalFeature.data.name}</h4>
                     <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800">

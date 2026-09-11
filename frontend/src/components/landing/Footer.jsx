@@ -42,7 +42,7 @@ export const Footer = () => {
         </div>
 
         <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-slate-500 text-[11px]">
-          <p>2026 Smooth. All Rights Reserved.</p>
+          <p>&copy; 2026 Smooth. All Rights Reserved.</p>
         </div>
 
       </div>

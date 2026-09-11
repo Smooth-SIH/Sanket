@@ -99,6 +99,26 @@
   border-radius: 0.375rem !important;
 }
 
+/* State Boundary Tooltip Styling & Conflict Prevention */
+.state-boundary-tooltip {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease-in-out;
+}
+
+/* Hide state boundary tooltips when an inspection popup is open to prevent overlapping */
+.has-active-inspection .state-boundary-tooltip,
+.has-active-popup .state-boundary-tooltip,
+.leaflet-popup-pane:not(:empty) ~ .leaflet-tooltip-pane .state-boundary-tooltip {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 /* Modern Accessible Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
