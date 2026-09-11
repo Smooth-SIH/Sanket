@@ -36,9 +36,7 @@
 
 ---
 
-## 2. Methodology & Process for Implementation
-
-### System Architecture & Data Flow Diagram
+## 2. System Architecture & Data Flow Diagram
 
 ```mermaid
 flowchart TD
@@ -55,39 +53,6 @@ flowchart TD
 
 ---
 
-### Implementation Process Step-by-Step
+## 3. MVP Link
 
-#### Step 1: Satellite Data Ingestion & Parameter Extraction
-
-1. The system connects to the satellite data stream on a **5-minute cadence**.
-2. Derived atmospheric physical parameters are extracted:
-   - **IWV (Integrated Water Vapor, mm)** — Water vapor accumulation in the atmospheric column.
-   - **CTT (Cloud Top Temperature, Kelvin)** — Deep convective cloud overshoot indicator.
-   - **CAPE (Convective Available Potential Energy, J/kg)** — Atmospheric instability measure.
-   - **CIN (Convective Inhibition, J/kg)** — Energy barrier suppressing convection before cloudburst.
-
-#### Step 2: Machine Learning Inference & SHAP Explainability
-
-1. The extracted parameter matrix is passed to the **XGBoost Classifier**.
-2. The model outputs:
-   - **Primary Hazard Classification**: Cloudburst, Flash Flood, Severe Thunderstorm, or Hailstorm.
-   - **Severity Level**: `CRITICAL`, `WARNING`, `WATCH`, or `NORMAL`.
-   - **Estimated Early Warning Lead Time**: Up to 45 minutes before touchdown.
-3. The **SHAP TreeExplainer** computes feature attribution values quantifying the exact contribution of each parameter to the prediction score.
-
-#### Step 3: Geospatial Indexing & Asset Proximity Scoring
-
-1. Active hazard boundaries are formatted into **GeoJSON Polygons**.
-2. Critical infrastructure assets (hydro dams, power grids, telecom towers, bridges, hospitals) are queried using MongoDB `2dsphere` spatial coordinates (`$near` / `$geoWithin`).
-3. Distance matrix calculations compute exact proximity from assets to severe storm cells.
-
-#### Step 4: Sub-Second WebSocket Broadcast & Operations Console
-
-1. **Socket.io** broadcasts live telemetry packets and critical hazard alerts directly to connected frontend clients.
-2. The **React 18 Operations Console** renders:
-   - Real-time telemetry gauges and trajectory area graphs.
-   - Interactive Leaflet map with hazard polygons and asset markers.
-   - 24-hour timeline replay slider to scrub through storm history.
-   - Emergency alert center with officer acknowledgment tracking.
-
----
+Render Deployed Link: <https://sanket-kcba.onrender.com/>
