@@ -103,6 +103,15 @@ class SanketNowcastModel:
         rain = df_input['rain_rate_mmh'].iloc[0]
         wind_sp = df_input['wind_speed_kmh'].iloc[0]
 
+        # Evaluate ML model prediction probability from trained XGBoost artifact
+        ml_severe_prob = 0.0
+        if self.model is not None:
+            try:
+                proba = self.model.predict_proba(df_input)
+                ml_severe_prob = float(proba[0][1]) if proba.shape[1] > 1 else float(proba[0][0])
+            except Exception:
+                ml_severe_prob = 0.0
+
         cloudburst_risk = min(
             1.0,
             max(
@@ -128,12 +137,14 @@ class SanketNowcastModel:
             )
         )
 
-        max_risk = max(
+        # Composite score blends physical soundings with ML model inference
+        physics_max = max(
             cloudburst_risk,
             flash_flood_risk,
             thunderstorm_risk,
             hail_risk
         )
+        max_risk = min(1.0, max(0.0, 0.65 * physics_max + 0.35 * ml_severe_prob))
 
         if max_risk >= 0.75:
             severity = "CRITICAL"
@@ -162,13 +173,18 @@ class SanketNowcastModel:
             'Severe Thunderstorm': thunderstorm_risk,
             'Hailstorm': hail_risk
         }
-        primary_hazard = max(hazards, key=hazards.get)
+        
+        if max_risk < 0.25:
+            primary_hazard = "Normal Atmospheric State"
+        else:
+            primary_hazard = max(hazards, key=hazards.get)
 
         return {
             'primary_hazard': str(primary_hazard),
             'severity': severity,
             'severity_color': color,
             'overall_risk_score': float(round(max_risk * 100, 1)),
+            'ml_model_probability': float(round(ml_severe_prob * 100, 1)),
             'cloudburst_probability': float(round(cloudburst_risk * 100, 1)),
             'flash_flood_probability': float(round(flash_flood_risk * 100, 1)),
             'thunderstorm_probability': float(round(thunderstorm_risk * 100, 1)),

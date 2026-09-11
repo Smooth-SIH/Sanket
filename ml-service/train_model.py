@@ -33,8 +33,23 @@ FEATURE_NAMES = [
 
 
 def derive_features(raw_df: pd.DataFrame) -> pd.DataFrame:
-    """Derive atmospheric features required by SANKET nowcasting engine."""
+    """Derive or extract atmospheric features required by SANKET nowcasting engine."""
     df = raw_df.copy()
+
+    # If enriched sounding features are already present, extract directly
+    if all(col in df.columns for col in ['IWV_mm', 'CTT_K', 'lifted_index', 'k_index']):
+        features_df = pd.DataFrame({
+            'IWV_mm': df['IWV_mm'].astype(float).round(2),
+            'CTT_K': df['CTT_K'].astype(float).round(2),
+            'CAPE_Jkg': df['cape'].astype(float).round(1),
+            'CIN_Jkg': df['convective_inhibition'].astype(float).abs().round(1),
+            'wind_speed_kmh': df['wind_speed_10m'].astype(float).round(1),
+            'humidity_pct': df['relative_humidity_2m'].astype(float).round(1),
+            'rain_rate_mmh': df['precipitation'].astype(float).round(2),
+            'lifted_index': df['lifted_index'].astype(float).round(2),
+            'k_index': df['k_index'].astype(float).round(1)
+        })
+        return features_df
 
     temp = df['temperature_2m'].astype(float)
     humidity = df['relative_humidity_2m'].astype(float)
@@ -97,20 +112,22 @@ def train_and_save():
     # Class distribution
     pos = y.sum()
     neg = len(y) - pos
-    print(f"      Class distribution: Severe/Flood={pos}, Normal={neg}")
+    scale_pos_weight = neg / max(1, pos)
+    print(f"      Class distribution: Severe/Convective Event={pos}, Normal={neg} (ratio: 1:{neg/pos:.1f})")
 
     # Split dataset
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y if pos > 1 else None
     )
 
-    print("[3/4] Fitting XGBoost Classifier...")
+    print("[3/4] Fitting XGBoost Classifier with Stratified Split & Weight Calibration...")
     model = xgb.XGBClassifier(
-        n_estimators=150,
+        n_estimators=180,
         max_depth=5,
-        learning_rate=0.06,
+        learning_rate=0.05,
         subsample=0.85,
         colsample_bytree=0.85,
+        scale_pos_weight=scale_pos_weight,
         eval_metric="logloss",
         random_state=42
     )
@@ -118,10 +135,14 @@ def train_and_save():
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
+    y_pred_proba = model.predict_proba(X_test)[:, 1]
     acc = accuracy_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_pred_proba)
+
     print(f"\n[Validation Results]")
     print(f"Accuracy: {acc * 100:.2f}%")
-    print(f"Classification Report:\n{classification_report(y_test, y_pred, zero_division=0)}")
+    print(f"ROC-AUC Score: {roc_auc:.4f}")
+    print(f"Classification Report:\n{classification_report(y_test, y_pred, target_names=['Normal', 'Severe/Flood'], zero_division=0)}")
 
     print(f"[4/4] Saving model artifact to {MODEL_OUTPUT_PATH}...")
     MODEL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

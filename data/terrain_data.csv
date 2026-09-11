@@ -1,6 +1,31 @@
-location,latitude,longitude,elevation,slope,drainage_risk
-Mumbai Central,18.9719,72.8190,8,2,0.85
-Andheri,19.1197,72.8468,12,3,0.70
-Bandra,19.0596,72.8295,15,4,0.55
-Borivali,19.2307,72.8567,25,8,0.30
-Thane,19.2183,72.9781,18,5,0.65
+location,state,region_type,latitude,longitude,elevation,slope,drainage_risk
+Kedarnath,Uttarakhand,Himalayan Glacial Valley,30.7346,79.0669,3583,28.5,0.94
+Joshimath,Uttarakhand,Himalayan Slump Slope,30.5574,79.5645,1875,24.0,0.91
+Chamoli,Uttarakhand,Alaknanda Gorge,30.4074,79.3274,1300,22.0,0.88
+Uttarkashi,Uttarakhand,Bhagirathi Valley,30.7268,78.4354,1158,19.5,0.85
+Rishikesh,Uttarakhand,Foothill River Basin,30.0869,78.2676,372,6.5,0.65
+Kullu Valley,Himachal Pradesh,Beas River Basin,31.9579,77.1095,1279,21.0,0.89
+Mandi,Himachal Pradesh,Beas Narrow Gorge,31.7087,76.932,760,18.0,0.86
+Dharamshala,Himachal Pradesh,Dhauladhar Escarpment,32.219,76.3234,1457,23.5,0.9
+Shimla,Himachal Pradesh,Himalayan Ridge,31.1048,77.1734,2276,17.0,0.72
+Leh,Ladakh,Trans-Himalayan Cold Desert Valley,34.1526,77.5771,3524,14.5,0.84
+Meppadi (Wayanad),Kerala,Western Ghats Tea Ridge,11.5534,76.132,780,27.0,0.95
+Chooralmala,Kerala,Western Ghats Debris Channel,11.532,76.178,820,31.0,0.98
+Munnar,Kerala,High Range Valley,10.0889,77.0595,1532,23.0,0.88
+Idukki Dam Basin,Kerala,Periyar Reservoir Canyon,9.8497,76.9725,720,25.5,0.92
+Mahabaleshwar,Maharashtra,Western Ghats High Plateau,17.9237,73.6586,1353,19.0,0.84
+Chiplun,Maharashtra,Vashishti Tidal River Basin,17.5323,73.5186,23,8.0,0.93
+Coorg (Madikeri),Karnataka,Western Ghats Highland,12.4244,75.7382,1061,18.5,0.82
+Silchar (Barak),Assam,Barak Meandering Floodplain,24.817,92.7993,35,2.5,0.92
+Guwahati (Deepor Beel),Assam,Brahmaputra Wetland Basin,26.1445,91.7362,55,3.0,0.87
+Cherrapunji,Meghalaya,Shillong Plateau Escarpment,25.2986,91.5822,1484,26.0,0.96
+Teesta Basin (Mangan),Sikkim,Glacial Lake Outburst Basin,27.5054,88.5284,956,30.0,0.97
+Mumbai Central,Maharashtra,Urban Lowland,18.9719,72.819,8,2.0,0.86
+Andheri (Mithi),Maharashtra,River Outflow Basin,19.1197,72.8468,12,3.0,0.75
+Kurla (Mithi Confluence),Maharashtra,River Bottleneck Basin,19.0657,72.8794,6,1.5,0.93
+Bandra,Maharashtra,Coastal Creek Zone,19.0596,72.8295,15,4.0,0.55
+Borivali,Maharashtra,National Park Slope,19.2307,72.8567,25,8.0,0.3
+Thane (Creek Basin),Maharashtra,Estuarine Lowland,19.2183,72.9781,18,5.0,0.67
+Chennai (Velachery),Tamil Nadu,Pallikaranai Marsh Basin,12.9815,80.218,7,1.0,0.91
+Delhi (Yamuna Bazar),Delhi,Yamuna River Floodplain,28.6655,77.234,208,1.5,0.89
+Bengaluru (Bellandur),Karnataka,Encroached Lake Valley,12.9304,77.6784,885,3.5,0.85

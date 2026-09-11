@@ -46,17 +46,17 @@ class ShapExplainabilityEngine:
 
         for name, val, shap_val in zip(self.feature_names, input_data, sv_arr):
             attributions.append({
-                'feature': name,
-                'value': round(val, 2),
-                'shap_value': round(float(shap_val), 4),
+                'feature': str(name),
+                'value': float(round(float(val), 2)),
+                'shap_value': float(round(float(shap_val), 4)),
                 'impact': 'Increase Risk' if shap_val > 0 else 'Decrease Risk'
             })
 
         attributions.sort(key=lambda x: abs(x['shap_value']), reverse=True)
 
         return {
-            'base_value': round(base_val, 4),
-            'prediction_shap_sum': round(sum(sv_arr), 4),
+            'base_value': float(round(float(base_val), 4)),
+            'prediction_shap_sum': float(round(float(sum(sv_arr)), 4)),
             'feature_attributions': attributions
         }
 
